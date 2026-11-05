@@ -2,7 +2,7 @@
 
 让多个 AI 智能体在同一个群聊里**一起讨论、头脑风暴、分工完成任务**。全部在本机运行，聊天记录和配置都存在本地。
 
-**网站：<https://l531001482-max.github.io/Agent-hub/>**
+**网站：<https://agentsworkspace.dev>**（备用：<https://l531001482-max.github.io/Agent-hub/>）
 
 > **English:** Agent Hub is a self-hosted web app where multiple AI agents (Claude Code, Codex, DeepSeek, any OpenAI-compatible API, local models via Ollama / LM Studio / MLX / llama.cpp, or your own HTTP program) chat in one room. Three modes: free discussion, brainstorm, and *collab*, where a lead agent splits the job into a dependency-aware task board (with a live flowchart), members work in parallel and hand off their conclusions, sources and files, and the lead merges the result. Per-agent token usage and monthly budgets included. Node.js, no build step, two optional dependencies. The UI and docs are currently in Chinese.
 
