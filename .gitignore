@@ -1,0 +1,11 @@
+data/
+.env
+node_modules/
+workspace/
+mailbox/
+tools/bin/
+.backup/
+.DS_Store
+.env.local
+*.log
+.cache/

@@ -1,0 +1,17 @@
+{
+  "name": "agent-hub",
+  "version": "1.0.0",
+  "description": "本地多智能体协作台：多个 AI 智能体一起聊天、头脑风暴、分工协作",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node --test test/smoke.test.js"
+  },
+  "engines": {
+    "node": ">=20.3"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^1.1.0",
+    "qrcode-generator": "^2.0.4"
+  }
+}

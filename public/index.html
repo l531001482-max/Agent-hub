@@ -1,0 +1,258 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Agent Hub</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><rect width='24' height='24' rx='6' fill='%235b5bd6'/><path d='M18 14.5a1.5 1.5 0 0 1-1.5 1.5H9l-3 3V7.5A1.5 1.5 0 0 1 7.5 6h9A1.5 1.5 0 0 1 18 7.5z' fill='none' stroke='white' stroke-width='1.6' stroke-linejoin='round'/></svg>">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Agent Hub">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#1c1c22" media="(prefers-color-scheme: dark)">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- 图标：lucide v0.460.0（ISC 许可），线条 1.5 -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="i-arrow-up" viewBox="0 0 24 24"><path d="m5 12 7-7 7 7" /> <path d="M12 19V5" /></symbol><symbol id="i-bot" viewBox="0 0 24 24"><path d="M12 8V4H8" /> <rect width="16" height="12" x="4" y="8" rx="2" /> <path d="M2 14h2" /> <path d="M20 14h2" /> <path d="M15 13v2" /> <path d="M9 13v2" /></symbol><symbol id="i-circle-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="m9 12 2 2 4-4" /></symbol><symbol id="i-circle-dot" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <circle cx="12" cy="12" r="1" /></symbol><symbol id="i-circle-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /> <path d="m15 9-6 6" /> <path d="m9 9 6 6" /></symbol><symbol id="i-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" /></symbol><symbol id="i-clipboard-list" viewBox="0 0 24 24"><rect width="8" height="4" x="8" y="2" rx="1" ry="1" /> <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /> <path d="M12 11h4" /> <path d="M12 16h4" /> <path d="M8 11h.01" /> <path d="M8 16h.01" /></symbol><symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2" /> <path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2" /></symbol><symbol id="i-file-text" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z" /> <path d="M14 2v4a2 2 0 0 0 2 2h4" /> <path d="M10 9H8" /> <path d="M16 13H8" /> <path d="M16 17H8" /></symbol><symbol id="i-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4" /> <path d="M3.34 19a10 10 0 1 1 17.32 0" /></symbol><symbol id="i-image" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2" ry="2" /> <circle cx="9" cy="9" r="2" /> <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" /></symbol><symbol id="i-lightbulb" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5" /> <path d="M9 18h6" /> <path d="M10 22h4" /></symbol><symbol id="i-list-checks" viewBox="0 0 24 24"><path d="m3 17 2 2 4-4" /> <path d="m3 7 2 2 4-4" /> <path d="M13 6h8" /> <path d="M13 12h8" /> <path d="M13 18h8" /></symbol><symbol id="i-menu" viewBox="0 0 24 24"><line x1="4" x2="20" y1="12" y2="12" /> <line x1="4" x2="20" y1="6" y2="6" /> <line x1="4" x2="20" y1="18" y2="18" /></symbol><symbol id="i-message-square" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" /></symbol><symbol id="i-package" viewBox="0 0 24 24"><path d="M11 21.73a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73z" /> <path d="M12 22V12" /> <path d="m3.3 7 7.703 4.734a2 2 0 0 0 1.994 0L20.7 7" /> <path d="m7.5 4.27 9 5.15" /></symbol><symbol id="i-paperclip" viewBox="0 0 24 24"><path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" /></symbol><symbol id="i-pause" viewBox="0 0 24 24"><rect x="14" y="4" width="4" height="16" rx="1" /> <rect x="6" y="4" width="4" height="16" rx="1" /></symbol><symbol id="i-play" viewBox="0 0 24 24"><polygon points="6 3 20 12 6 21 6 3" /></symbol><symbol id="i-plus" viewBox="0 0 24 24"><path d="M5 12h14" /> <path d="M12 5v14" /></symbol><symbol id="i-rotate-ccw" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /> <path d="M3 3v5h5" /></symbol><symbol id="i-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8" /> <path d="m21 21-4.3-4.3" /></symbol><symbol id="i-smartphone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2" /> <path d="M12 18h.01" /></symbol><symbol id="i-triangle-alert" viewBox="0 0 24 24"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3" /> <path d="M12 9v4" /> <path d="M12 17h.01" /></symbol><symbol id="i-users" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /> <circle cx="9" cy="7" r="4" /> <path d="M22 21v-2a4 4 0 0 0-3-3.87" /> <path d="M16 3.13a4 4 0 0 1 0 7.75" /></symbol><symbol id="i-x" viewBox="0 0 24 24"><path d="M18 6 6 18" /> <path d="m6 6 12 12" /></symbol></svg>
+<div class="app">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand">Agent Hub<small>多智能体协作台</small></div>
+
+    <div class="section-head"><span>房间</span><button class="icon-btn" id="newRoom" title="新建房间" aria-label="新建房间"><svg class="ic"><use href="#i-plus"/></svg></button></div>
+    <ul class="list" id="roomList"></ul>
+
+    <div class="section-head"><span>智能体</span><button class="icon-btn" id="newAgent" title="添加智能体" aria-label="添加智能体"><svg class="ic"><use href="#i-plus"/></svg></button></div>
+    <ul class="list" id="agentList"></ul>
+    <p class="hint" id="agentHint">点智能体可编辑；也可以直接改 <code>data/agents.json</code>。</p>
+    <div class="side-actions">
+      <button class="btn ghost" id="usageBtn"><svg class="ic"><use href="#i-gauge"/></svg>用量</button>
+      <button class="btn ghost" id="phoneBtn" hidden><svg class="ic"><use href="#i-smartphone"/></svg>手机访问</button>
+    </div>
+  </aside>
+
+  <main class="main">
+    <header class="topbar">
+      <button class="icon-btn menu" id="menuBtn" title="菜单" aria-label="菜单"><svg class="ic lg"><use href="#i-menu"/></svg></button>
+      <input class="room-name" id="roomName" spellcheck="false">
+      <div class="modes" id="modes">
+        <button data-mode="chat" title="成员轮流发言，可多轮；@名字 只让某人回答"><svg class="ic"><use href="#i-message-square"/></svg>自由讨论</button>
+        <button data-mode="brainstorm" title="独立出点子 → 互评改进 → 主持人总结"><svg class="ic"><use href="#i-lightbulb"/></svg>头脑风暴</button>
+        <button data-mode="collab" title="负责人拆解任务并分配 → 成员依次完成 → 负责人整合"><svg class="ic"><use href="#i-list-checks"/></svg>分工协作</button>
+      </div>
+      <button class="btn ghost" id="settingsBtn"><svg class="ic"><use href="#i-users"/></svg><span>成员</span></button>
+    </header>
+
+    <div class="settings" id="settings" hidden>
+      <div class="settings-grid">
+        <div>
+          <label class="lbl">参与成员（发言顺序 = 勾选顺序）</label>
+          <div id="memberChecks" class="checks"></div>
+        </div>
+        <div>
+          <label class="lbl">负责人 / 主持人</label>
+          <select id="leaderSel"></select>
+          <label class="lbl">讨论轮数（自由讨论、头脑风暴）</label>
+          <input type="number" id="roundsInp" min="1" max="5">
+          <label class="check"><input type="checkbox" id="confirmPlanChk"><span>分工协作：负责人分好工后先给我确认，再开工</span></label>
+          <div class="row gap">
+            <button class="btn ghost" id="clearRoom">清空聊天</button>
+            <button class="btn danger ghost" id="deleteRoom">删除房间</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <section class="board" id="board" hidden></section>
+
+    <div class="messages" id="messages"></div>
+
+    <footer class="composer">
+      <div class="chips" id="mentionChips"></div>
+      <div class="attach-list" id="attachList" hidden></div>
+      <div class="input-row">
+        <button class="btn ghost attach-btn" id="attachBtn" title="上传文件：图片、PDF、Word、PPT、Excel、文本（也可以拖进来，或者直接粘贴截图）" aria-label="上传文件"><svg class="ic lg"><use href="#i-paperclip"/></svg></button>
+        <input type="file" id="fileInput" multiple hidden>
+        <textarea id="input" rows="2" enterkeyhint="send" placeholder="发消息或布置任务（Enter 发送，Shift+Enter 换行，运行中也能插话）"></textarea>
+        <button class="btn primary" id="sendBtn">发送</button>
+        <button class="btn danger" id="stopBtn" hidden>停止</button>
+      </div>
+    </footer>
+  </main>
+</div>
+
+<dialog id="agentDlg">
+  <form method="dialog" id="agentForm">
+    <h3 id="agentDlgTitle">智能体</h3>
+    <div class="grid2">
+      <label>名字<input name="name" required></label>
+      <div class="row gap">
+        <label style="flex:1">头像<input name="avatar" maxlength="4" placeholder="比如 C 或一个 emoji"></label>
+        <label style="width:64px">颜色<input name="color" type="color"></label>
+      </div>
+    </div>
+    <label>角色设定（人设 / 擅长什么 / 说话风格）
+      <textarea name="persona" rows="3" placeholder="例：资深后端工程师，关注性能和可维护性，回答直接给代码。"></textarea>
+    </label>
+    <label class="check"><input type="checkbox" name="onlyWhenMentioned"><span>只在被 @ 时发言（适合专精模型：平时不插话，消息里 @它 才回答）</span></label>
+    <label>模型服务预设（选一个自动填写）
+      <select id="presetSel"></select>
+    </label>
+    <p class="hint preset-note" id="presetNote" hidden></p>
+    <div class="discover" id="discoverBox">
+      <button type="button" class="btn ghost" id="discoverBtn"><svg class="ic"><use href="#i-search"/></svg>查找本机正在运行的模型</button>
+      <div class="discover-out" id="discoverOut" hidden></div>
+    </div>
+    <div class="grid2">
+      <label>接口类型
+        <select name="provider">
+          <option value="openai">OpenAI 兼容（大多数模型和本机服务）</option>
+          <option value="anthropic">Claude（Anthropic 官方 SDK）</option>
+          <option value="claude-code">本机 Claude Code（用你的 Claude 登录）</option>
+          <option value="codex">本机 Codex（用你的 ChatGPT 登录）</option>
+          <option value="relay">手动转达（没有接口的 App）</option>
+          <option value="rest">自定义 JSON 接口（任意模型服务，填请求模板就能接，不用写代码）</option>
+          <option value="command">本机命令 / 推理脚本（直接运行你的模型脚本，不用写服务器）</option>
+          <option value="http">自定义程序（Agent Hub 协议）</option>
+          <option value="mock">演示模式（不调用模型）</option>
+        </select>
+      </label>
+      <label data-for="openai anthropic claude-code codex rest command">模型名 model<input name="model" placeholder="deepseek-flash"></label>
+      <label data-for="openai">备用模型（可选）<input name="fallbackModels" placeholder="主模型繁忙时依次改用，逗号分隔"></label>
+    </div>
+    <label data-for="openai anthropic http rest claude-code"><span id="baseUrlLabel">接口地址 Base URL</span><input name="baseUrl"></label>
+    <div class="grid2">
+      <label data-for="openai anthropic http rest claude-code">API Key<input name="apiKey" type="password" autocomplete="off"></label>
+      <label data-for="openai rest">温度（可留空）<input name="temperature" type="number" step="0.1" min="0" max="2"></label>
+      <label data-for="anthropic claude-code codex">思考强度 effort
+        <select name="effort">
+          <option value="">默认（不传）</option>
+          <option value="low">low · 最快</option>
+          <option value="medium">medium</option>
+          <option value="high">high</option>
+          <option value="xhigh">xhigh</option>
+          <option value="max">max · 最深入</option>
+        </select>
+      </label>
+    </div>
+    <p class="hint" id="keyHint" data-for="openai anthropic http rest"></p>
+    <div data-for="rest">
+      <label>请求体模板（JSON；<code>{{变量}}</code> 会换成这次的内容）<textarea name="bodyTemplate" rows="6" class="mono" spellcheck="false" placeholder='{"model": "{{model}}", "messages": {{messages}}, "stream": true}'></textarea></label>
+      <label>回复所在位置（可留空，自动识别 JSON / SSE / NDJSON 里常见的写法）<input name="responsePath" class="mono" spellcheck="false" placeholder="比如 data.reply、choices.0.message.content"></label>
+      <details class="auto-relay">
+        <summary>模板里能用的变量</summary>
+        <p class="hint"><code>{{prompt}}</code> 聊天记录 + 发言要求（整段文字）· <code>{{system}}</code> 系统提示词 · <code>{{input}}</code> 两者合成一段 · <code>{{messages}}</code> OpenAI 格式的消息数组 · <code>{{message}}</code> 最新一条用户消息（分工协作时是它的子任务）· <code>{{history}}</code> 聊天记录数组 · <code>{{model}}</code> 模型名 · <code>{{max_tokens}}</code> <code>{{temperature}}</code> <code>{{stop}}</code> 高级设置里的值 · <code>{{key}}</code> API Key（写在请求头里用）· <code>{{agent}}</code> <code>{{persona}}</code> 名字和人设。<br>整个值只写一个变量时保留原类型（数组、数字），值为空时整个字段省略。</p>
+      </details>
+    </div>
+    <div data-for="command">
+      <label>要运行的命令<textarea name="command" rows="2" class="mono" spellcheck="false" placeholder="python3 ~/models/infer.py"></textarea></label>
+      <label>标准输入的格式
+        <select name="inputFormat">
+          <option value="text">纯文本（系统提示词 + 空行 + 聊天记录）</option>
+          <option value="json">JSON（一行，含 system、prompt、messages，和「自定义程序」收到的一样）</option>
+        </select>
+      </label>
+      <p class="hint">轮到它发言时运行一次这条命令：提示词从标准输入传进去，标准输出就是回复（边输出边显示）；出错时显示标准错误的最后几行。提示词不会拼进命令行。模型名会放进环境变量 <code>AGENT_HUB_MODEL</code>。</p>
+    </div>
+    <div class="grid2" data-for="claude-code codex command">
+      <label data-for="claude-code codex">工具权限
+        <select name="toolMode">
+          <option value="chat">只聊天（不用工具）</option>
+          <option value="read">只读（看文件，不能改）</option>
+          <option value="edit">可改文件（只能写工作目录）</option>
+          <option value="skills">可用 Skill（联网查资料、学 AI 课程等）</option>
+          <option value="wide">宽权限（联网、运行命令、写指定文件夹）</option>
+        </select>
+      </label>
+      <label>工作目录<input name="workdir" id="workdirInp"></label>
+    </div>
+    <div id="writeDirsBox" hidden>
+      <label>可写文件夹（一行一个，留空 = 只能写工作目录）<textarea name="writeDirs" rows="2" class="mono" spellcheck="false" placeholder="~/Documents/my-project"></textarea></label>
+      <p class="hint">宽权限：能联网、运行任何命令，能写这些文件夹和工作目录。Agent Hub 自己的文件、start.command、~/Library、~/Applications、shell 启动脚本和各 AI 的配置（~/.claude、~/.codex 等）不能改；Key、SSH、登录凭证、钥匙串、浏览器数据读不到；命令都在系统沙箱里跑。其他文件读得到，联网时可能被发出去。只能在 Mac 上打开，手机发的消息也会触发它。</p>
+    </div>
+    <p class="hint" data-for="claude-code">接口地址和 Key 留空 = 用你在 Claude Code 里登录的账号，消耗同一个账号的额度；填 DeepSeek 的 <code>https://api.deepseek.com</code> 和 Key，就是让 DeepSeek 用 Claude Code 的工具干活（按 DeepSeek 的价格计费，没有网页搜索）。无论哪种权限都不能控制电脑，文件操作只限工作目录。「可用 Skill」在「可改文件」的基础上，能用你装进 Claude Code 的 skill（~/.claude/skills），能搜索、读网页；命令只能运行 agent-reach 的只读查询（搜索、读帖、取字幕），其他几档不能运行任何命令。「可用 Skill」只能在 Mac 上打开。</p>
+    <p class="hint" data-for="codex">用你在 Codex 里登录的 ChatGPT 账号，消耗同一个账号的额度。「只聊天」不运行命令，读不了文件。「只读」「可改文件」能运行命令，由 Codex 的沙箱限制：不能联网，「可改文件」只能写工作目录；但能读到这台 Mac 上的其他文件，所以这两档只能在 Mac 上打开。</p>
+    <div data-for="relay">
+      <label>信箱名（英文）<input name="mailbox" placeholder="claude-app"></label>
+      <p class="hint">轮到它发言时，聊天里会出现「复制提示词」和「粘贴回复」：复制给它，再把它的回复粘贴回来。</p>
+      <details class="auto-relay">
+        <summary>可选：让它自动回复</summary>
+        <p class="hint">如果这个助手的定时任务能读写这台电脑上的文件，可以把下面这段话发给它，设成每分钟执行一次的定时任务：</p>
+        <pre id="relayTask"></pre>
+        <button type="button" class="btn ghost" id="copyRelayTask">复制这段话</button>
+      </details>
+    </div>
+    <details class="advanced" id="advBox" data-for="openai rest command http">
+      <summary>小模型 / 专精模型适配（本机模型、自己训练的模型建议看一眼）</summary>
+      <div class="grid2">
+        <label>发给它的内容
+          <select name="contextMode">
+            <option value="full">群聊记录 + 发言要求（默认）</option>
+            <option value="latest">只发最新一条消息 + 人设（分工时发它的子任务）</option>
+            <option value="raw">原样转发那条消息，不加任何提示词</option>
+          </select>
+        </label>
+        <label>最多带多少字聊天记录<input name="historyChars" type="number" min="500" step="500" placeholder="默认 24000；本机小模型建议 4000–8000"></label>
+        <label>系统提示词
+          <select name="systemMode">
+            <option value="system">正常发送（默认）</option>
+            <option value="merge">合并进用户消息（模型不支持 system 角色时）</option>
+            <option value="none">不发送（模型自带人设）</option>
+          </select>
+        </label>
+        <label>对话格式
+          <select name="messageFormat">
+            <option value="single">整段聊天记录放进一条消息（默认）</option>
+            <option value="multi">拆成多轮对话（它自己说的话算 assistant）</option>
+          </select>
+        </label>
+        <label data-for="openai rest command">最长回复（token）<input name="maxTokens" type="number" min="1" placeholder="留空 = 模型默认"></label>
+        <label data-for="openai rest">停止词（一行一个）<textarea name="stop" rows="1" class="mono" spellcheck="false" placeholder="<|im_end|>"></textarea></label>
+      </div>
+      <label class="check"><input type="checkbox" name="hideThinking"><span>隐藏思考过程 <code>&lt;think&gt;…&lt;/think&gt;</code>（Qwen3、DeepSeek-R1 等推理模型会输出）</span></label>
+      <label data-for="openai">额外参数（JSON，合并进请求，可选）<textarea name="extraBody" rows="2" class="mono" spellcheck="false" placeholder='{"top_p": 0.9, "repetition_penalty": 1.1}'></textarea></label>
+      <label data-for="openai rest">请求头（JSON，可选；Key 请填在上面，这里写 <code>{{key}}</code>）<textarea name="headers" rows="2" class="mono" spellcheck="false" placeholder='{"X-API-Key": "{{key}}"}'></textarea></label>
+      <label data-for="openai rest http">启动命令（可选：连不上时自动运行它启动本机模型服务，闲置 15 分钟自动关掉）<input name="startCommand" class="mono" spellcheck="false" placeholder="mlx_lm.server --model ~/models/我的模型 --port 8080"></label>
+    </details>
+    <details class="advanced" id="budgetBox">
+      <summary>预算和用量 <span class="budget-sum" id="budgetSum"></span></summary>
+      <div class="grid2">
+        <label>本月预算（美元，可留空）<input name="budgetUsd" type="number" min="0" step="0.5" placeholder="比如 5；用完自动跳过"></label>
+        <label>本月 token 上限（万，可留空）<input name="budgetTokensWan" type="number" min="0" step="1" placeholder="比如 100 = 100 万 token"></label>
+        <label data-for="openai anthropic codex rest command http">输入单价（美元 / 百万 token）<input name="priceIn" type="number" min="0" step="0.01" placeholder="可留空，填了才能估算花费"></label>
+        <label data-for="openai anthropic codex rest command http">输出单价（美元 / 百万 token）<input name="priceOut" type="number" min="0" step="0.01" placeholder="看各家官网的价格页"></label>
+      </div>
+      <p class="hint">按自然月算，每月 1 号重新开始；用到 80% 时群里提醒一次，用完后这个智能体自动跳过（分工里它的子任务标成失败，调高预算后能重做）。token 上限算的是没命中缓存的输入 + 输出。<span data-for="claude-code">Claude Code 自己会报花费：是按 API 价格折算的，用订阅登录时不会真的扣这么多钱，可以当作额度参考。</span><span data-for="codex">Codex 只报 token，不报花费。</span><span data-for="openai anthropic rest">接口只报 token，填了单价才能估算美元（缓存按原价算，实际可能更便宜）。</span></p>
+    </details>
+    <p class="hint" id="localOnlyNote" hidden>「要运行的命令」「启动命令」「工作目录」「可写文件夹」只能在 Mac 上修改。</p>
+    <p class="test-out" id="testOut"></p>
+    <div class="row gap end">
+      <button type="button" class="btn danger ghost" id="delAgent">删除</button>
+      <span style="flex:1"></span>
+      <button type="button" class="btn ghost" id="testAgent" data-for="openai anthropic claude-code codex rest command http mock">测试连接</button>
+      <button type="button" class="btn ghost" value="cancel" id="cancelAgent">取消</button>
+      <button type="submit" class="btn primary" value="ok">保存</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog id="phoneDlg">
+  <div class="phone-box">
+    <h3>在手机上用 Agent Hub</h3>
+    <div id="phoneBody"></div>
+    <div class="row gap end"><button type="button" class="btn ghost" id="closePhone">关闭</button></div>
+  </div>
+</dialog>
+
+<dialog id="usageDlg">
+  <div class="usage-box">
+    <h3>用量</h3>
+    <div id="usageBody"></div>
+    <div class="row gap end"><button type="button" class="btn ghost" id="closeUsage">关闭</button></div>
+  </div>
+</dialog>
+
+<script src="app.js"></script>
+</body>
+</html>
