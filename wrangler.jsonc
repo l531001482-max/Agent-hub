@@ -1,0 +1,12 @@
+// 落地页部署到 Cloudflare（https://agentsworkspace.dev）。更新网站：npx wrangler deploy
+// 只上传 docs/ 里的静态文件，Agent Hub 本身不在这里运行
+{
+  "name": "agentsworkspace",
+  "compatibility_date": "2026-10-01",
+  "assets": { "directory": "./docs", "not_found_handling": "404-page" },
+  "routes": [
+    { "pattern": "agentsworkspace.dev", "custom_domain": true },
+    { "pattern": "www.agentsworkspace.dev", "custom_domain": true }
+  ],
+  "workers_dev": false
+}

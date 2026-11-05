@@ -9,3 +9,4 @@ tools/bin/
 .env.local
 *.log
 .cache/
+.wrangler/
