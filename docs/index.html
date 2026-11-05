@@ -1,0 +1,985 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent Hub · 本地多智能体协作台</title>
+<meta name="description" content="让 Claude Code、Codex、DeepSeek 和本地模型在一个群聊里讨论、头脑风暴、分工协作。开源，全部在本机运行。">
+<meta name="theme-color" content="#09090a">
+<meta property="og:title" content="Agent Hub · 本地多智能体协作台">
+<meta property="og:description" content="给一群 AI 派活：负责人拆任务，能同时做的同时做，最后整合。开源，全部在本机运行。">
+<meta property="og:image" content="https://l531001482-max.github.io/Agent-hub/screenshot-dark.png">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2309090a'/%3E%3Cpath d='M16 9v6M9 15h14M9 15v5M16 15v5M23 15v5' stroke='%23737373' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='8' r='3' fill='%23f5f5f5'/%3E%3Ccircle cx='9' cy='23' r='3' fill='%23f5f5f5'/%3E%3Ccircle cx='16' cy='23' r='3' fill='%2322c55e'/%3E%3Ccircle cx='23' cy='23' r='3' fill='%23f5f5f5'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/*
+  参考 paperclip.ing 的配色分配：底色和文字全是中性黑灰；颜色只出现在三处——
+  首屏和结尾的星空、每节的小标签（各自一个色相）、状态点（橙 = 进行中，绿 = 完成）
+*/
+:root {
+  --bg: #09090a; --band: #111112; --card: #141415; --raised: #1c1c1e; --deep: #050505;
+  --line: rgba(255, 255, 255, .08); --line-2: rgba(255, 255, 255, .13);
+  --text: #f5f5f5; --text-2: #a1a1a1; --muted: #737373;
+  --doing: #e5a536; --done: #22c55e; --done-text: #86efac;
+  --sky: #7eb6e3; --rose: #ee79a1; --lilac: #c9a9e8; --mint: #9ce8a7; --gold: #e5c07b; --ember: #f08a6c;
+  --ease: cubic-bezier(.22, 1, .36, 1);
+  --display: "Inter Tight", Inter, -apple-system, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 400 16px/1.6 Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif; -webkit-font-smoothing: antialiased; }
+a { color: inherit; text-decoration: none; }
+code, .mono { font-family: var(--mono); }
+code { font-size: .88em; }
+button { font: inherit; color: inherit; }
+.wrap { max-width: 1152px; margin: 0 auto; padding: 0 32px; }
+.icon { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+:focus-visible { outline: 2px solid var(--sky); outline-offset: 2px; border-radius: 6px; }
+.lead, .sub, h1, h2 { text-wrap: pretty; }
+
+/* 顶栏 */
+header.top { position: sticky; top: 0; z-index: 20; background: rgba(9, 9, 10, .8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-bottom: 1px solid var(--line); }
+header.top .wrap { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+.brand { display: flex; align-items: center; gap: 10px; font: 600 16px/1 var(--display); letter-spacing: -0.01em; }
+.brand svg { width: 20px; height: 20px; }
+.top nav { display: flex; align-items: center; gap: 28px; font-size: 14px; }
+.top nav a { color: var(--text-2); transition: color .15s var(--ease); }
+.top nav a:hover { color: var(--text); }
+.top nav a.pill { color: var(--deep); }
+
+/* 按钮 */
+.btn { display: inline-flex; align-items: center; gap: 8px; height: 44px; padding: 0 20px; border-radius: 22px; font-size: 15px; font-weight: 500; border: 1px solid var(--line-2); background: transparent; color: var(--text); cursor: pointer; transition: background-color .15s var(--ease), border-color .15s var(--ease), transform .12s var(--ease); }
+.btn:hover { background: var(--raised); }
+.btn:active { transform: scale(.98); }
+.btn.pill, .btn.primary { background: var(--text); border-color: var(--text); color: var(--deep); }
+.btn.pill:hover, .btn.primary:hover { background: #fff; }
+.btn.small { height: 36px; padding: 0 16px; font-size: 14px; border-radius: 18px; }
+.link-arrow { display: inline-flex; align-items: center; gap: 6px; height: 44px; padding: 0 8px; color: var(--text-2); font-size: 15px; transition: color .15s var(--ease); }
+.link-arrow:hover { color: var(--text); }
+.link-arrow .icon { width: 16px; height: 16px; transition: transform .15s var(--ease); }
+.link-arrow:hover .icon { transform: translateX(2px); }
+
+/* 小标签：每节一个色相 */
+.tag { display: inline-block; font: 500 12px/20px var(--mono); padding: 0 8px; border-radius: 6px; margin-bottom: 20px; color: var(--c); background: color-mix(in srgb, var(--c) 14%, transparent); border: 1px solid color-mix(in srgb, var(--c) 22%, transparent); }
+
+/* 标题 */
+h1, h2, h3 { font-family: var(--display); font-weight: 600; margin: 0; }
+h2 { font-size: 48px; line-height: 1.08; letter-spacing: -0.03em; }
+h2.lg { font-size: 60px; }
+.sub { color: var(--text-2); font-size: 17px; line-height: 28px; margin: 16px 0 0; max-width: 34rem; }
+section { padding: 128px 0; position: relative; }
+section.band { background: var(--band); border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.center { text-align: center; }
+.center .sub { margin-left: auto; margin-right: auto; }
+
+/* 星空（首屏和结尾） */
+.sky { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; -webkit-mask-image: linear-gradient(#000 55%, transparent); mask-image: linear-gradient(#000 55%, transparent); }
+
+/* 首屏 */
+.hero { position: relative; padding: 112px 0 0; text-align: center; overflow: hidden; }
+.hero .wrap { position: relative; }
+.hero h1 { font-size: 76px; line-height: 1.02; letter-spacing: -0.035em; margin: 0 auto 24px; }
+.hero .lead { font-size: 19px; line-height: 30px; color: var(--text-2); margin: 0 auto 36px; max-width: 40rem; }
+.hero .cta { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; }
+
+/* 首屏演示：三种模式 */
+.demo { margin: 72px auto 0; max-width: 1056px; background: var(--card); border: 1px solid var(--line-2); border-radius: 20px; overflow: hidden; text-align: left; box-shadow: 0 32px 80px rgba(0, 0, 0, .5); }
+.demo-bar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--deep); border: 1px solid var(--line); border-radius: 12px; }
+.tabs button { height: 32px; padding: 0 14px; border: 0; border-radius: 8px; background: transparent; color: var(--text-2); font-size: 14px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; transition: background-color .15s var(--ease), color .15s var(--ease); }
+.tabs button .icon { width: 16px; height: 16px; }
+.tabs button:hover { color: var(--text); }
+.tabs button[aria-selected="true"] { background: var(--raised); color: var(--text); box-shadow: inset 0 1px 0 rgba(255, 255, 255, .08); }
+.demo-room { font-size: 13px; color: var(--muted); }
+.panel { padding: 40px 32px 28px; min-height: 548px; }
+.panel[hidden] { display: none; }
+
+/* 分工协作：组织图 */
+.stage-fit { position: relative; margin: 0 auto; }
+.stage { position: absolute; left: 0; top: 0; width: 960px; height: 428px; transform-origin: 0 0; }
+.wires { position: absolute; inset: 0; width: 960px; height: 428px; overflow: visible; }
+.wires path { fill: none; stroke: var(--line-2); stroke-width: 1.5; }
+.pulse { fill: var(--done); opacity: 0; }
+.node { position: absolute; width: 272px; height: 80px; border-radius: 40px; background: var(--deep); border: 1px solid var(--line-2); display: flex; align-items: center; gap: 14px; padding: 0 24px 0 16px; cursor: default; transition: border-color .3s var(--ease); }
+.node .ib { width: 44px; height: 44px; border-radius: 22px; background: var(--raised); display: flex; align-items: center; justify-content: center; color: var(--text-2); flex: none; transition: color .3s var(--ease); }
+.node .t { font-size: 16px; font-weight: 500; line-height: 22px; }
+.node .s { display: flex; align-items: center; gap: 8px; font-size: 14px; line-height: 20px; color: var(--text-2); margin-top: 2px; }
+.node .st { margin-left: auto; font: 12px/16px var(--mono); color: var(--muted); position: relative; width: 48px; height: 16px; text-align: right; }
+.node .st span { position: absolute; right: 0; top: 0; opacity: 0; white-space: nowrap; transition: opacity .2s var(--ease); }
+.node .st .w { opacity: 1; }
+.node.doing { border-color: rgba(229, 165, 54, .5); }
+.node.doing .ib { color: var(--text); }
+.node.doing .dot { background: var(--doing); animation: breathe 1.6s var(--ease) infinite; }
+.node.done .dot { background: var(--done); }
+.node.doing .st .w, .node.done .st .w { opacity: 0; }
+.node.doing .st .d { opacity: 1; }
+.node.done .st .f { opacity: 1; color: var(--done-text); }
+.node .why { position: absolute; left: 50%; top: calc(100% + 10px); transform: translate(-50%, -4px); width: 260px; padding: 10px 12px; border-radius: 10px; background: var(--raised); border: 1px solid var(--line-2); font-size: 13px; line-height: 20px; color: var(--text-2); opacity: 0; pointer-events: none; transition: opacity .16s var(--ease), transform .16s var(--ease); z-index: 5; }
+.node .why b { color: var(--text); font-weight: 500; }
+.node:hover { border-color: rgba(255, 255, 255, .3); }
+.node:hover .why { opacity: 1; transform: translate(-50%, 0); }
+.dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--muted); flex: none; transition: background-color .3s var(--ease); }
+@keyframes breathe { 0%, 100% { box-shadow: 0 0 0 0 rgba(229, 165, 54, .5); } 50% { box-shadow: 0 0 0 4px rgba(229, 165, 54, 0); } }
+.junction { position: absolute; width: 28px; height: 12px; border-radius: 6px; background: var(--raised); border: 1px solid var(--line-2); transition: background-color .3s var(--ease), border-color .3s var(--ease); }
+.junction.on { background: var(--done); border-color: var(--done); }
+.n0 { left: 344px; top: 0; } .n1 { left: 0; top: 148px; } .n2 { left: 344px; top: 148px; } .n3 { left: 688px; top: 148px; } .n4 { left: 344px; top: 348px; }
+.n4 .why { top: auto; bottom: calc(100% + 10px); }
+.j1 { left: 466px; top: 108px; } .j2 { left: 466px; top: 308px; }
+.cap { margin-top: 28px; display: flex; justify-content: space-between; gap: 16px; font-size: 13px; color: var(--muted); }
+.now { display: inline-flex; align-items: center; gap: 8px; color: var(--text-2); }
+.now span:last-child { transition: opacity .2s var(--ease); }
+.now.fade span:last-child { opacity: 0; }
+.legend { display: flex; gap: 16px; flex: none; }
+.legend span { display: inline-flex; align-items: center; gap: 8px; }
+
+/* 自由讨论：群聊 */
+.chat { max-width: 720px; margin: 0 auto; display: flex; flex-direction: column; gap: 16px; }
+.cm { display: flex; gap: 12px; opacity: 0; transform: translateY(8px); transition: opacity .35s var(--ease), transform .35s var(--ease); }
+.cm.in { opacity: 1; transform: none; }
+.cm .av { width: 32px; height: 32px; border-radius: 16px; background: var(--raised); color: var(--text-2); display: flex; align-items: center; justify-content: center; font: 500 12px var(--mono); flex: none; }
+.cm .who { font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+.cm .who b { color: var(--text); font-weight: 500; margin-right: 8px; }
+.cm .bubble { font-size: 15px; line-height: 24px; color: var(--text); }
+.cm.me { flex-direction: row-reverse; }
+.cm.me .bubble { background: var(--raised); border: 1px solid var(--line); padding: 8px 14px; border-radius: 14px 14px 4px 14px; }
+.cm.me .who { text-align: right; }
+.mention { color: var(--sky); }
+.typing { display: inline-flex; gap: 4px; padding: 6px 0; }
+.typing i { width: 6px; height: 6px; border-radius: 3px; background: var(--muted); animation: tdot 1s var(--ease) infinite; }
+.typing i:nth-child(2) { animation-delay: .15s; } .typing i:nth-child(3) { animation-delay: .3s; }
+@keyframes tdot { 0%, 100% { opacity: .3; } 50% { opacity: 1; } }
+
+/* 头脑风暴 */
+.bs-step { display: flex; align-items: center; gap: 8px; justify-content: center; flex-wrap: wrap; font-size: 13px; color: var(--muted); margin-bottom: 24px; }
+.bs-step span { padding: 2px 8px; border-radius: 6px; transition: background-color .2s var(--ease), color .2s var(--ease); }
+.bs-step span.on { background: var(--raised); color: var(--text); }
+.ideas { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+.idea { background: var(--deep); border: 1px solid var(--line-2); border-radius: 14px; padding: 20px; min-height: 196px; display: flex; flex-direction: column; transition: border-color .3s var(--ease); }
+.idea .by { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); }
+.idea .by b { color: var(--text); font-weight: 500; }
+.idea .body { margin-top: 14px; font-size: 15px; line-height: 24px; flex: 1; position: relative; min-height: 48px; }
+.idea .body .hide { position: absolute; inset: 0; display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 13px; transition: opacity .3s var(--ease); }
+.idea .body .txt { opacity: 0; transition: opacity .4s var(--ease); }
+.idea.shown .body .hide { opacity: 0; }
+.idea.shown .body .txt { opacity: 1; }
+.idea .votes { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 16px; min-height: 24px; }
+.vote { font: 12px/22px var(--mono); padding: 0 8px; border-radius: 6px; background: var(--raised); color: var(--text-2); opacity: 0; transform: translateY(4px); transition: opacity .3s var(--ease), transform .3s var(--ease); }
+.vote.in { opacity: 1; transform: none; }
+.idea.rank1 { border-color: rgba(34, 197, 94, .55); }
+.idea .rank { font: 12px var(--mono); color: var(--done-text); margin-left: auto; opacity: 0; transition: opacity .3s var(--ease); }
+.idea.ranked .rank { opacity: 1; }
+.bs-sum { margin-top: 20px; font-size: 14px; color: var(--text-2); display: flex; align-items: center; gap: 8px; opacity: 0; transition: opacity .4s var(--ease); }
+.bs-sum.in { opacity: 1; }
+
+/* 三步 */
+.steps { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 56px; border: 1px solid var(--line); border-radius: 16px; background: var(--card); overflow: hidden; text-align: left; }
+.step { padding: 32px; }
+.step + .step { border-left: 1px solid var(--line); }
+.step .n { font: 12px var(--mono); color: var(--muted); }
+.step h3 { font-size: 22px; letter-spacing: -0.02em; margin: 16px 0 8px; }
+.step p { margin: 0; color: var(--text-2); font-size: 15px; line-height: 24px; }
+.step .eg { margin-top: 16px; font-size: 14px; color: var(--text); background: var(--deep); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; min-height: 40px; }
+.caret { display: inline-block; width: 1px; height: 1em; background: var(--text); vertical-align: -2px; margin-left: 2px; animation: blink 1s steps(1) infinite; }
+@keyframes blink { 50% { opacity: 0; } }
+
+/* 六格功能 */
+.grid6 { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 56px; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--card); }
+.cell { padding: 28px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); transition: background-color .2s var(--ease); }
+.cell:nth-child(3n) { border-right: 0; }
+.cell:nth-last-child(-n+3) { border-bottom: 0; }
+.cell:hover { background: var(--raised); }
+.cell .icon { color: var(--text-2); }
+.cell h3 { font-family: Inter, -apple-system, "PingFang SC", sans-serif; font-size: 16px; font-weight: 600; margin: 20px 0 6px; }
+.cell p { margin: 0; font-size: 14px; line-height: 22px; color: var(--text-2); }
+
+/* 真实界面 */
+.window { margin-top: 56px; border: 1px solid var(--line-2); border-radius: 16px; overflow: hidden; background: var(--card); }
+.window-bar { height: 36px; display: flex; align-items: center; gap: 8px; padding: 0 16px; border-bottom: 1px solid var(--line); font: 12px var(--mono); color: var(--muted); }
+.window-bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--raised); }
+.window-bar span { margin-left: 8px; }
+.window img { display: block; width: 100%; height: auto; }
+.note { margin-top: 16px; font-size: 13px; color: var(--muted); }
+
+/* 左文右图 */
+.feature { display: grid; grid-template-columns: 5fr 7fr; gap: 72px; align-items: center; }
+.feature.flip > :first-child { order: 2; }
+.ticks { margin: 28px 0 0; padding: 0; list-style: none; }
+.ticks li { display: flex; gap: 12px; padding: 6px 0; font-size: 15px; line-height: 24px; color: var(--text-2); }
+.ticks li .icon { color: var(--muted); width: 16px; height: 16px; margin-top: 4px; }
+.mock { background: var(--card); border: 1px solid var(--line-2); border-radius: 16px; min-width: 0; }
+.mock-h { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 14px 20px; border-bottom: 1px solid var(--line); font-size: 13px; color: var(--muted); }
+.mock-b { padding: 20px; }
+
+/* 接入：服务网格 */
+.prov { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+.pv { background: var(--deep); border: 1px solid var(--line); border-radius: 10px; padding: 12px; transition: border-color .15s var(--ease), background-color .15s var(--ease); }
+.pv:hover { border-color: var(--line-2); background: var(--raised); }
+.pv b { display: block; font-size: 14px; font-weight: 500; }
+.pv span { display: flex; align-items: center; gap: 6px; font: 11px/16px var(--mono); color: var(--muted); margin-top: 4px; }
+.pv span i { width: 6px; height: 6px; border-radius: 50%; background: var(--k); flex: none; }
+.prov-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 16px; font: 11px var(--mono); color: var(--muted); }
+.prov-legend span { display: inline-flex; align-items: center; gap: 6px; }
+.prov-legend i { width: 6px; height: 6px; border-radius: 50%; background: var(--k); }
+
+/* 交接：工单 */
+.ticket-t { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+.ticket-t .id { font: 12px var(--mono); color: var(--muted); }
+.ticket-t b { font-weight: 500; color: var(--text); }
+.chip-done { font: 11px/18px var(--mono); padding: 0 8px; border-radius: 6px; color: var(--done-text); background: rgba(34, 197, 94, .14); }
+.mini-tabs { display: inline-flex; gap: 2px; }
+.mini-tabs button { height: 26px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--muted); font-size: 12px; cursor: pointer; transition: background-color .15s var(--ease), color .15s var(--ease); }
+.mini-tabs button:hover { color: var(--text); }
+.mini-tabs button[aria-selected="true"] { background: var(--raised); color: var(--text); }
+.thread { display: flex; flex-direction: column; gap: 16px; }
+.tm { display: flex; gap: 12px; font-size: 14px; line-height: 22px; }
+.tm .av { width: 28px; height: 28px; border-radius: 14px; background: var(--raised); color: var(--text-2); display: flex; align-items: center; justify-content: center; flex: none; }
+.tm .av .icon { width: 14px; height: 14px; }
+.tm .who { font-size: 13px; margin-bottom: 2px; }
+.tm .who b { font-weight: 500; margin-right: 6px; }
+.tm .who span { color: var(--muted); }
+.tm p { margin: 0; color: var(--text-2); }
+.handoff { margin-top: 10px; border: 1px solid var(--line); border-radius: 10px; background: var(--deep); padding: 12px 14px; }
+.handoff dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 16px; }
+.handoff dt { color: var(--muted); }
+.handoff dd { margin: 0; color: var(--text); }
+.trace { margin: 0; padding: 0; list-style: none; font: 13px/20px var(--mono); }
+.trace li { display: grid; grid-template-columns: 4px 1fr auto; gap: 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); color: var(--text-2); }
+.trace li:first-child { border-top: 0; padding-top: 0; }
+.trace li span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.trace li i { width: 4px; height: 16px; border-radius: 2px; background: var(--done); }
+.trace li em { font-style: normal; font-size: 11px; color: var(--done-text); }
+.trace-note { margin: 12px 0 0; font-size: 13px; color: var(--muted); }
+
+/* 预算 */
+table.budget { width: 100%; border-collapse: collapse; font-size: 14px; }
+table.budget th { text-align: left; font: 500 11px var(--mono); color: var(--muted); padding: 0 0 12px; }
+table.budget th.r, table.budget td.r { text-align: right; }
+table.budget td { padding: 10px 0; border-top: 1px solid var(--line); vertical-align: middle; }
+table.budget .ag { display: flex; align-items: center; gap: 10px; }
+table.budget .ag .ib { width: 28px; height: 28px; border-radius: 8px; background: var(--raised); display: flex; align-items: center; justify-content: center; color: var(--text-2); flex: none; }
+table.budget .ag .ib .icon { width: 14px; height: 14px; }
+table.budget .ag small { display: block; font: 11px var(--mono); color: var(--muted); }
+table.budget .num { font: 13px var(--mono); font-variant-numeric: tabular-nums; white-space: nowrap; color: var(--text-2); padding-left: 16px; }
+table.budget .num b { color: var(--text); font-weight: 500; }
+table.budget tfoot td { font-weight: 500; }
+.bar { height: 6px; border-radius: 3px; background: var(--raised); overflow: hidden; margin-left: 16px; }
+.bar i { display: block; height: 100%; border-radius: 3px; background: var(--text); transform-origin: 0 50%; transform: scaleX(0); transition: transform .9s var(--ease); transition-delay: calc(var(--i, 0) * 80ms + 200ms); }
+.bar i.hi { background: var(--doing); }
+.reveal.in .bar i { transform: scaleX(1); }
+.alert { margin-top: 16px; font-size: 13px; color: var(--text-2); display: flex; align-items: center; gap: 8px; }
+
+/* 你说了算 */
+.control { display: grid; grid-template-columns: 5fr 7fr; gap: 72px; align-items: center; }
+.verbs { font: 500 30px/1.5 var(--mono); letter-spacing: -0.01em; }
+.verb { display: grid; grid-template-columns: 200px 1fr; gap: 24px; align-items: baseline; padding: 6px 0; }
+.verb .w { color: var(--text); min-height: 45px; }
+.verb .w::after { content: ""; display: inline-block; width: 2px; height: .9em; background: var(--ember); vertical-align: -3px; margin-left: 4px; opacity: 0; }
+.verb.typing-now .w::after { opacity: 1; animation: blink 1s steps(1) infinite; }
+.verb .d { font: 400 15px/24px Inter, -apple-system, "PingFang SC", sans-serif; color: var(--text-2); opacity: 0; transition: opacity .3s var(--ease); }
+.verb.done .d { opacity: 1; }
+.safe { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 72px; border: 1px solid var(--line); border-radius: 16px; overflow: hidden; background: var(--card); }
+.safe > div { padding: 24px 28px; display: flex; gap: 12px; font-size: 14px; line-height: 22px; color: var(--text-2); }
+.safe > div + div { border-left: 1px solid var(--line); }
+.safe .icon { color: var(--text-2); margin-top: 2px; }
+.safe b { display: block; color: var(--text); font-weight: 600; font-size: 15px; margin-bottom: 4px; }
+
+/* 常见问题 */
+.faq-wrap { display: grid; grid-template-columns: 4fr 7fr; gap: 72px; }
+.faq details { border-bottom: 1px solid var(--line); }
+.faq details:first-child { border-top: 1px solid var(--line); }
+.faq summary { list-style: none; cursor: pointer; padding: 20px 0; font-size: 16px; font-weight: 500; display: flex; justify-content: space-between; align-items: center; gap: 16px; transition: color .15s var(--ease); }
+.faq summary:hover { color: #fff; }
+.faq summary::-webkit-details-marker { display: none; }
+.faq summary .icon { color: var(--muted); width: 16px; height: 16px; transition: transform .2s var(--ease); }
+.faq details[open] summary .icon { transform: rotate(180deg); }
+.faq details p { margin: 0 0 20px; color: var(--text-2); font-size: 15px; line-height: 24px; max-width: 40rem; }
+
+/* 结尾 */
+.final { position: relative; overflow: hidden; text-align: center; }
+.final .wrap { position: relative; }
+.term { max-width: 680px; margin: 40px auto 0; background: var(--deep); border: 1px solid var(--line-2); border-radius: 14px; overflow: hidden; text-align: left; }
+.term-bar { display: flex; align-items: center; justify-content: space-between; height: 40px; padding: 0 8px 0 16px; border-bottom: 1px solid var(--line); }
+.term-bar .dots { display: flex; gap: 6px; }
+.term-bar .dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--raised); }
+.term-body { display: flex; align-items: flex-start; gap: 12px; padding: 16px 8px 16px 16px; }
+.term-body pre { margin: 0; flex: 1; overflow-x: auto; font: 13px/22px var(--mono); color: var(--text); white-space: pre; scrollbar-width: none; }
+.term-body pre::-webkit-scrollbar { display: none; }
+.term-body pre .p { color: var(--muted); user-select: none; }
+.term-body pre .c { color: var(--muted); }
+.copy { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; flex: none; transition: color .15s var(--ease), background-color .15s var(--ease); }
+.copy:hover { background: var(--raised); color: var(--text); }
+.copy .icon { width: 16px; height: 16px; }
+.copy .ok { display: none; color: var(--done); }
+.copy.copied .idle { display: none; }
+.copy.copied .ok { display: block; }
+.final .cta { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; align-items: center; margin-top: 32px; }
+.final .req { margin-top: 16px; font-size: 13px; color: var(--muted); }
+
+/* 页脚 */
+footer { padding: 72px 0 40px; border-top: 1px solid var(--line); }
+.foot { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 32px; }
+.foot .wm { font: 600 36px/1 var(--display); letter-spacing: -0.03em; }
+.foot .wm + p { margin: 12px 0 0; font-size: 14px; color: var(--muted); max-width: 18rem; }
+.foot h4 { margin: 0 0 14px; font-size: 13px; font-weight: 600; }
+.foot ul { margin: 0; padding: 0; list-style: none; }
+.foot li { padding: 4px 0; }
+.foot li a { font-size: 13px; color: var(--muted); transition: color .15s var(--ease); }
+.foot li a:hover { color: var(--text); }
+.legal { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; margin-top: 56px; padding-top: 20px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+
+/* 滚到眼前播放一次 */
+.reveal .rv { opacity: 0; transform: translateY(8px); transition: opacity .45s var(--ease), transform .45s var(--ease); transition-delay: calc(var(--i, 0) * 60ms); }
+.reveal.in .rv { opacity: 1; transform: none; }
+
+@media (max-width: 960px) {
+  .feature, .control, .faq-wrap { grid-template-columns: 1fr; gap: 40px; }
+  .feature.flip > :first-child { order: 0; }
+  .grid6 { grid-template-columns: repeat(2, 1fr); }
+  .cell:nth-child(3n) { border-right: 1px solid var(--line); }
+  .cell:nth-child(2n) { border-right: 0; }
+  .cell:nth-last-child(-n+3) { border-bottom: 1px solid var(--line); }
+  .cell:nth-last-child(-n+2) { border-bottom: 0; }
+  .foot { grid-template-columns: 1fr 1fr 1fr; }
+  .foot > :first-child { grid-column: 1 / -1; }
+  .top nav a.hide-sm { display: none; }
+  section { padding: 96px 0; }
+  .ideas { grid-template-columns: 1fr; }
+  .idea { min-height: 0; }
+  .panel { min-height: 0; }
+}
+@media (max-width: 720px) {
+  .wrap { padding: 0 16px; }
+  .hero { padding: 64px 0 0; }
+  .hero h1 { font-size: 44px; line-height: 1.06; }
+  .hero .lead { font-size: 17px; line-height: 28px; }
+  h2, h2.lg { font-size: 34px; }
+  section { padding: 80px 0; }
+  .demo { margin-top: 48px; border-radius: 16px; }
+  .demo-bar { flex-direction: column; align-items: stretch; }
+  .tabs { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .tabs button { justify-content: center; padding: 0 6px; }
+  .tabs button .icon { display: none; }
+  .demo-room { display: none; }
+  .panel { padding: 20px 16px; }
+  .stage-fit { width: auto !important; height: auto !important; }
+  .stage { position: relative; width: auto; height: auto; transform: none !important; display: flex; flex-direction: column; gap: 12px; }
+  .wires, .junction { display: none; }
+  .node { position: relative; left: auto !important; top: auto !important; width: 100%; height: 68px; border-radius: 34px; padding-left: 12px; }
+  .node .ib { width: 40px; height: 40px; border-radius: 20px; }
+  .node.sub-task { margin-left: 24px; width: calc(100% - 24px); }
+  .node .why { display: none; }
+  .cap { flex-direction: column; gap: 8px; }
+  .steps, .safe { grid-template-columns: 1fr; }
+  .step + .step, .safe > div + div { border-left: 0; border-top: 1px solid var(--line); }
+  .grid6 { grid-template-columns: 1fr; }
+  .cell, .cell:nth-child(3n), .cell:nth-child(2n) { border-right: 0; border-bottom: 1px solid var(--line); }
+  .cell:last-child { border-bottom: 0; }
+  .prov { grid-template-columns: repeat(2, 1fr); }
+  .verbs { font-size: 22px; }
+  .verb { grid-template-columns: 1fr; gap: 0; padding: 8px 0; }
+  .verb .w { min-height: 33px; }
+  .foot { grid-template-columns: 1fr 1fr; }
+  .final .btn { width: 100%; justify-content: center; }
+  table.budget .bar { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .node.doing .dot, .caret, .typing i, .verb.typing-now .w::after { animation: none; }
+  .reveal .rv, .cm, .vote { opacity: 1; transform: none; transition: none; }
+  .bar i { transform: none; transition: none; }
+}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-github" viewBox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></symbol>
+  <symbol id="i-copy" viewBox="0 0 24 24"><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m6 9 6 6 6-6"/></symbol>
+  <symbol id="i-arrow-right" viewBox="0 0 24 24"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></symbol>
+  <symbol id="i-list-checks" viewBox="0 0 24 24"><path d="m3 17 2 2 4-4"/><path d="m3 7 2 2 4-4"/><path d="M13 6h8"/><path d="M13 12h8"/><path d="M13 18h8"/></symbol>
+  <symbol id="i-message" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></symbol>
+  <symbol id="i-bulb" viewBox="0 0 24 24"><path d="M15 14c.2-1 .7-1.7 1.5-2.5 1-.9 1.5-2.2 1.5-3.5A6 6 0 0 0 6 8c0 1 .2 2.2 1.5 3.5.7.7 1.3 1.5 1.5 2.5"/><path d="M9 18h6"/><path d="M10 22h4"/></symbol>
+  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20"/><path d="M2 12h20"/></symbol>
+  <symbol id="i-code" viewBox="0 0 24 24"><path d="m16 18 6-6-6-6"/><path d="m8 6-6 6 6 6"/></symbol>
+  <symbol id="i-layout" viewBox="0 0 24 24"><rect width="18" height="7" x="3" y="3" rx="1"/><rect width="9" height="7" x="3" y="14" rx="1"/><rect width="5" height="7" x="16" y="14" rx="1"/></symbol>
+  <symbol id="i-merge" viewBox="0 0 24 24"><circle cx="18" cy="18" r="3"/><circle cx="6" cy="6" r="3"/><path d="M6 21V9a9 9 0 0 0 9 9"/></symbol>
+  <symbol id="i-handoff" viewBox="0 0 24 24"><path d="m16 3 4 4-4 4"/><path d="M20 7H4"/><path d="m8 21-4-4 4-4"/><path d="M4 17h16"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="m12 14 4-4"/><path d="M3.34 19a10 10 0 1 1 17.32 0"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></symbol>
+  <symbol id="i-phone" viewBox="0 0 24 24"><rect width="14" height="20" x="5" y="2" rx="2" ry="2"/><path d="M12 18h.01"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.810 17 5 19 5a1 1 0 0 1 1 1z"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
+  <symbol id="i-eye-off" viewBox="0 0 24 24"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></symbol>
+</svg>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M16 9v6M9 15h14M9 15v5M16 15v5M23 15v5" stroke="#737373" stroke-width="2" fill="none" stroke-linecap="round"/><circle cx="16" cy="8" r="3" fill="#f5f5f5"/><circle cx="9" cy="23" r="3" fill="#f5f5f5"/><circle cx="16" cy="23" r="3" fill="#22c55e"/><circle cx="23" cy="23" r="3" fill="#f5f5f5"/></svg>Agent Hub</a>
+    <nav>
+      <a href="#how" class="hide-sm">怎么用</a>
+      <a href="#features" class="hide-sm">功能</a>
+      <a href="#faq" class="hide-sm">常见问题</a>
+      <a class="btn small pill" href="https://github.com/l531001482-max/Agent-hub"><svg class="icon" style="width:16px;height:16px"><use href="#i-github"/></svg>GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <canvas class="sky" data-density="1500" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <h1>给一群 AI 派活<br>不用一个个去问</h1>
+      <p class="lead">把 Claude Code、Codex、DeepSeek 和你自己的本地模型拉进同一个群。说一句要做什么，负责人拆任务、大家分头做，最后整合成一份结果。</p>
+      <div class="cta">
+        <a class="btn primary" href="#start">开始用</a>
+        <a class="link-arrow" href="https://github.com/l531001482-max/Agent-hub">在 GitHub 上查看<svg class="icon"><use href="#i-arrow-right"/></svg></a>
+      </div>
+
+      <div class="demo" id="demo">
+        <div class="demo-bar">
+          <div class="tabs" role="tablist" aria-label="协作方式">
+            <button role="tab" aria-selected="true" aria-controls="p-collab" id="t-collab"><svg class="icon"><use href="#i-list-checks"/></svg>分工协作</button>
+            <button role="tab" aria-selected="false" aria-controls="p-chat" id="t-chat"><svg class="icon"><use href="#i-message"/></svg>自由讨论</button>
+            <button role="tab" aria-selected="false" aria-controls="p-bs" id="t-bs"><svg class="icon"><use href="#i-bulb"/></svg>头脑风暴</button>
+          </div>
+          <span class="demo-room">房间：记账小程序 · 3 位成员</span>
+        </div>
+
+        <div class="panel" id="p-collab" role="tabpanel" aria-labelledby="t-collab">
+          <div class="stage-fit" id="fit">
+            <div class="stage" id="stage" role="img" aria-label="分工组织图：负责人 Claude Code 把任务拆给 DeepSeek 查资料、Codex 写代码、Claude Code 做界面，三件事同时做，做完由负责人整合">
+              <svg class="wires" viewBox="0 0 960 428" aria-hidden="true">
+                <path d="M480 80 V114 M136 114 H824 M136 114 V148 M480 114 V148 M824 114 V148"/>
+                <path d="M136 228 V314 M480 228 V314 M824 228 V314 M136 314 H824 M480 314 V348"/>
+                <path id="w0" d="M480 80 V114" stroke="none"/>
+                <path id="w1" d="M480 114 H136 V148" stroke="none"/><path id="w2" d="M480 114 V148" stroke="none"/><path id="w3" d="M480 114 H824 V148" stroke="none"/>
+                <path id="w4" d="M136 228 V314 H480 V348" stroke="none"/><path id="w5" d="M480 228 V348" stroke="none"/><path id="w6" d="M824 228 V314 H480 V348" stroke="none"/>
+                <circle class="pulse" r="4" data-w="w0"/><circle class="pulse" r="4" data-w="w1"/><circle class="pulse" r="4" data-w="w2"/><circle class="pulse" r="4" data-w="w3"/>
+                <circle class="pulse" r="4" data-w="w4"/><circle class="pulse" r="4" data-w="w5"/><circle class="pulse" r="4" data-w="w6"/>
+              </svg>
+              <span class="junction j1"></span>
+              <span class="junction j2"></span>
+              <div class="node n0"><span class="ib"><svg class="icon"><use href="#i-list-checks"/></svg></span><div><div class="t">负责人 · 分工</div><div class="s"><span class="dot"></span>Claude Code</div></div><span class="st"><span class="w">待开始</span><span class="d">分工中</span><span class="f">完成</span></span><div class="why"><b>负责人</b>看每个成员的角色设定和实际能力（能不能联网、改文件、跑命令），把任务拆成三块</div></div>
+              <div class="node n1 sub-task"><span class="ib"><svg class="icon"><use href="#i-globe"/></svg></span><div><div class="t">查资料</div><div class="s"><span class="dot"></span>DeepSeek</div></div><span class="st"><span class="w">等待</span><span class="d">进行中</span><span class="f">完成</span></span><div class="why"><b>为什么交给它：</b>便宜，适合大量阅读，查同类记账小程序的功能和评价</div></div>
+              <div class="node n2 sub-task"><span class="ib"><svg class="icon"><use href="#i-code"/></svg></span><div><div class="t">写代码</div><div class="s"><span class="dot"></span>Codex</div></div><span class="st"><span class="w">等待</span><span class="d">进行中</span><span class="f">完成</span></span><div class="why"><b>为什么交给它：</b>能在工作目录里运行命令、改文件，写技术方案和第一版代码</div></div>
+              <div class="node n3 sub-task"><span class="ib"><svg class="icon"><use href="#i-layout"/></svg></span><div><div class="t">做界面</div><div class="s"><span class="dot"></span>Claude Code</div></div><span class="st"><span class="w">等待</span><span class="d">进行中</span><span class="f">完成</span></span><div class="why"><b>为什么交给它：</b>角色设定里写了擅长界面和文案，画记一笔、分类、月度汇总三个页面</div></div>
+              <div class="node n4"><span class="ib"><svg class="icon"><use href="#i-merge"/></svg></span><div><div class="t">负责人 · 整合</div><div class="s"><span class="dot"></span>Claude Code</div></div><span class="st"><span class="w">等待</span><span class="d">整合中</span><span class="f">完成</span></span><div class="why"><b>整合：</b>拿到三份完整产出和交接单，合成一份方案，标出谁没把握的地方</div></div>
+            </div>
+          </div>
+          <div class="cap"><span class="now" id="now"><span class="dot" id="nowDot"></span><span id="nowText">把鼠标移到节点上，看为什么交给它</span></span><span class="legend"><span><i class="dot" style="background:var(--doing)"></i>进行中</span><span><i class="dot" style="background:var(--done)"></i>完成</span></span></div>
+        </div>
+
+        <div class="panel" id="p-chat" role="tabpanel" aria-labelledby="t-chat" hidden>
+          <div class="chat" id="chat"></div>
+        </div>
+
+        <div class="panel" id="p-bs" role="tabpanel" aria-labelledby="t-bs" hidden>
+          <div class="bs-step" id="bsStep"><span data-s="1">第 1 轮 · 各自出点子，互相看不到</span><span>→</span><span data-s="2">第 2 轮 · 互评</span><span>→</span><span data-s="3">主持人总结</span></div>
+          <div class="ideas" id="ideas">
+            <div class="idea"><div class="by"><span class="dot"></span><b>DeepSeek</b><span class="rank">第 2 名</span></div><div class="body"><span class="hide"><svg class="icon" style="width:14px;height:14px"><use href="#i-eye-off"/></svg>正在想，别人看不到</span><span class="txt">拍一张小票，自动识别金额和商家，记一笔不用手打</span></div><div class="votes"><span class="vote">Codex +1</span><span class="vote">Claude Code +2</span></div></div>
+            <div class="idea"><div class="by"><span class="dot"></span><b>Codex</b><span class="rank">第 1 名</span></div><div class="body"><span class="hide"><svg class="icon" style="width:14px;height:14px"><use href="#i-eye-off"/></svg>正在想，别人看不到</span><span class="txt">长按说一句「午饭 32」，语音直接记账，3 秒完成</span></div><div class="votes"><span class="vote">DeepSeek +2</span><span class="vote">Claude Code +2</span></div></div>
+            <div class="idea"><div class="by"><span class="dot"></span><b>Claude Code</b><span class="rank">第 3 名</span></div><div class="body"><span class="hide"><svg class="icon" style="width:14px;height:14px"><use href="#i-eye-off"/></svg>正在想，别人看不到</span><span class="txt">每月设一个预算，花到八成时提醒，超了在首页标红</span></div><div class="votes"><span class="vote">DeepSeek +1</span><span class="vote">Codex +1</span></div></div>
+          </div>
+          <div class="bs-sum" id="bsSum"><span class="dot" style="background:var(--done)"></span>主持人：第一版先做语音记账，小票识别排第二，预算提醒放到第二版</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section id="how">
+    <div class="wrap center">
+      <span class="tag" style="--c:var(--sky)">怎么用</span>
+      <h2 class="lg">布置任务<br>不是来回复制粘贴</h2>
+      <p class="sub">以前要把一个 AI 的回答复制给另一个，再自己把结果拼起来。现在三步。</p>
+      <div class="steps reveal" id="steps">
+        <div class="step">
+          <div class="n">01</div>
+          <h3>说要做什么</h3>
+          <p>在群里发一句话，可以带上文件、图片、视频</p>
+          <div class="eg" id="typing" data-text="做一个记账小程序的第一版方案"><span class="tx">做一个记账小程序的第一版方案</span><span class="caret"></span></div>
+        </div>
+        <div class="step">
+          <div class="n">02</div>
+          <h3>挑好成员</h3>
+          <p>每个 AI 写清楚擅长什么，负责人按擅长和实际能力分工，并写明为什么交给它</p>
+        </div>
+        <div class="step">
+          <div class="n">03</div>
+          <h3>确认分工，开工</h3>
+          <p>想把关就先停下来，你改分工、调先后，再点开始。做完由负责人整合成一份结果</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="features" class="band">
+    <div class="wrap">
+      <span class="tag" style="--c:var(--lilac)">功能</span>
+      <h2>一个人管好<br>一群 AI 要用到的</h2>
+      <div class="grid6">
+        <div class="cell"><svg class="icon"><use href="#i-message"/></svg><h3>三种协作方式</h3><p>自由讨论、头脑风暴、分工协作，每个房间选一种，运行中随时插话</p></div>
+        <div class="cell"><svg class="icon"><use href="#i-list-checks"/></svg><h3>任务清单和流程图</h3><p>子任务写明要等谁，能同时做的同时做，失败了只重做那一步</p></div>
+        <div class="cell"><svg class="icon"><use href="#i-handoff"/></svg><h3>交接单</h3><p>结论、依据、假设、没把握的地方，连同网页和文件交给下一位</p></div>
+        <div class="cell"><svg class="icon"><use href="#i-gauge"/></svg><h3>用量和预算</h3><p>每条回复记 token 和花费，每个 AI 设月预算，用完自动跳过</p></div>
+        <div class="cell"><svg class="icon"><use href="#i-plug"/></svg><h3>什么模型都能接</h3><p>本机登录的工具、云端 API、本地模型、推理脚本、自己的程序</p></div>
+        <div class="cell"><svg class="icon"><use href="#i-phone"/></svg><h3>手机也能用</h3><p>同一个 Wi-Fi 下扫码打开，要输访问码，能添加到主屏幕</p></div>
+      </div>
+      <div class="window">
+        <div class="window-bar"><i></i><i></i><i></i><span>localhost:8787</span></div>
+        <img src="screenshot-dark.png" alt="Agent Hub 界面：分工协作房间，上方是任务清单流程图，下方是负责人的总结" width="1600" height="1000" loading="lazy">
+      </div>
+      <p class="note">真实界面截图，用的是演示智能体，没有接真实模型</p>
+    </div>
+  </section>
+
+  <section>
+    <div class="wrap">
+      <div class="feature">
+        <div>
+          <span class="tag" style="--c:var(--mint)">接入</span>
+          <h2>用你已经有的 AI</h2>
+          <p class="sub">Claude Code、Codex 用你本机登录的账号，不用另外买 API。本地跑的模型点一下就能找到。一个都没有，也能先用演示模式试。</p>
+          <ul class="ticks">
+            <li><svg class="icon"><use href="#i-check"/></svg>任何 OpenAI 兼容接口，填地址和 Key 就行</li>
+            <li><svg class="icon"><use href="#i-check"/></svg>不是标准格式的接口，填个请求模板，不用写代码</li>
+            <li><svg class="icon"><use href="#i-check"/></svg>自己写的程序，提供一个 HTTP 接口就能进群</li>
+          </ul>
+        </div>
+        <div class="mock">
+          <div class="mock-h"><span>添加智能体 · 模型服务</span><span class="mono">把鼠标移上去看看</span></div>
+          <div class="mock-b">
+            <div class="prov">
+              <div class="pv" style="--k:var(--mint)"><b>Claude Code</b><span><i></i>本机账号</span></div>
+              <div class="pv" style="--k:var(--mint)"><b>Codex</b><span><i></i>本机账号</span></div>
+              <div class="pv" style="--k:var(--sky)"><b>Claude API</b><span><i></i>云端</span></div>
+              <div class="pv" style="--k:var(--sky)"><b>DeepSeek</b><span><i></i>云端</span></div>
+              <div class="pv" style="--k:var(--sky)"><b>Grok</b><span><i></i>云端</span></div>
+              <div class="pv" style="--k:var(--sky)"><b>Gemini</b><span><i></i>云端</span></div>
+              <div class="pv" style="--k:var(--gold)"><b>Ollama</b><span><i></i>本地</span></div>
+              <div class="pv" style="--k:var(--gold)"><b>LM Studio</b><span><i></i>本地</span></div>
+              <div class="pv" style="--k:var(--gold)"><b>MLX</b><span><i></i>本地</span></div>
+              <div class="pv" style="--k:var(--gold)"><b>llama.cpp</b><span><i></i>本地</span></div>
+              <div class="pv" style="--k:var(--gold)"><b>vLLM</b><span><i></i>服务器</span></div>
+              <div class="pv" style="--k:var(--rose)"><b>推理脚本</b><span><i></i>本机命令</span></div>
+              <div class="pv" style="--k:var(--rose)"><b>JSON 接口</b><span><i></i>填模板</span></div>
+              <div class="pv" style="--k:var(--rose)"><b>HTTP 程序</b><span><i></i>自己写</span></div>
+              <div class="pv" style="--k:var(--rose)"><b>手动转达</b><span><i></i>没接口的 App</span></div>
+              <div class="pv" style="--k:var(--muted)"><b>演示模式</b><span><i></i>不调用模型</span></div>
+            </div>
+            <div class="prov-legend"><span style="--k:var(--mint)"><i></i>用本机登录的账号</span><span style="--k:var(--sky)"><i></i>填 Key</span><span style="--k:var(--gold)"><i></i>本地，点「查找」自动填</span><span style="--k:var(--rose)"><i></i>自定义</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="feature flip">
+        <div>
+          <span class="tag" style="--c:var(--rose)">交接</span>
+          <h2>每一步都有记录<br>每次交接都说清楚</h2>
+          <p class="sub">每个 AI 做完都留一张交接单。查过的网页、写出的文件、思考过程节选，一起交给下一位，后面的人不用从头猜。</p>
+          <ul class="ticks">
+            <li><svg class="icon"><use href="#i-check"/></svg>要等的那几步，产出完整给到，不截断</li>
+            <li><svg class="icon"><use href="#i-check"/></svg>只能聊天的模型，也能拿到别人写出的文件内容</li>
+          </ul>
+        </div>
+        <div class="mock reveal">
+          <div class="mock-h">
+            <span class="ticket-t"><span class="id">子任务 2</span><b>写代码</b><span class="chip-done">完成</span></span>
+            <span class="mini-tabs" role="tablist" aria-label="交接内容"><button role="tab" aria-selected="true" data-v="ho">交接单</button><button role="tab" aria-selected="false" data-v="tr">资料和文件</button></span>
+          </div>
+          <div class="mock-b">
+            <div data-pane="ho">
+              <div class="thread">
+                <div class="tm rv" style="--i:0"><span class="av"><svg class="icon"><use href="#i-list-checks"/></svg></span><div><div class="who"><b>负责人</b><span>Claude Code · 分工</span></div><p>写技术方案和第一版代码。为什么交给你：能运行命令、改文件</p></div></div>
+                <div class="tm rv" style="--i:2"><span class="av"><svg class="icon"><use href="#i-code"/></svg></span><div><div class="who"><b>Codex</b><span>14 分钟后</span></div><p>建议用微信小程序原生开发，数据先存在手机本地，第二版再接云端同步。</p>
+                  <div class="handoff">
+                    <dl>
+                      <dt>结论</dt><dd>原生小程序，数据存本地</dd>
+                      <dt>依据</dt><dd>小程序官方文档的本地存储说明</dd>
+                      <dt>假设</dt><dd>第一版只有一个人用</dd>
+                      <dt>没把握</dt><dd>记账条目很多时的读写速度</dd>
+                      <dt>提醒</dt><dd>整合时注明换手机后数据不会自动迁移</dd>
+                    </dl>
+                  </div>
+                </div></div>
+              </div>
+            </div>
+            <div data-pane="tr" hidden>
+              <ul class="trace">
+                <li><i></i><span>WebSearch 微信小程序 本地存储 上限</span><em>已搜</em></li>
+                <li><i></i><span>WebFetch developers.weixin.qq.com/…/storage</span><em>已读</em></li>
+                <li><i></i><span>Write 技术方案.md</span><em>已写</em></li>
+                <li><i></i><span>Write miniprogram/pages/add/index.js</span><em>已写</em></li>
+                <li><i></i><span>思考过程节选 · 3000 字</span><em>已附</em></li>
+              </ul>
+              <p class="trace-note">只能聊天的成员会直接拿到文件内容；能自己打开文件的只拿路径</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap">
+      <div class="feature">
+        <div>
+          <span class="tag" style="--c:var(--gold)">用量和预算</span>
+          <h2>每个 AI 花多少<br>都有上限</h2>
+          <p class="sub">每条回复都记下用了多少 token，能算的还算出花费。给每个 AI 设一个月的预算，用到 80% 提醒你一次，用完就自动跳过它。</p>
+        </div>
+        <div class="mock reveal" id="budget">
+          <div class="mock-h"><span>本月用量</span><span class="mono">示例数据</span></div>
+          <div class="mock-b">
+            <table class="budget">
+              <thead><tr><th>智能体</th><th style="width:40%"><span style="margin-left:16px">预算用了</span></th><th class="r">花费</th></tr></thead>
+              <tbody>
+                <tr><td><span class="ag"><span class="ib"><svg class="icon"><use href="#i-list-checks"/></svg></span><span>Claude Code<small>负责人</small></span></span></td><td><div class="bar"><i style="width:32%;--i:0"></i></div></td><td class="num r"><b data-to="3.20">$3.20</b> / $10</td></tr>
+                <tr><td><span class="ag"><span class="ib"><svg class="icon"><use href="#i-globe"/></svg></span><span>DeepSeek<small>查资料</small></span></span></td><td><div class="bar"><i class="hi" style="width:84%;--i:1"></i></div></td><td class="num r"><b data-to="1.68">$1.68</b> / $2</td></tr>
+                <tr><td><span class="ag"><span class="ib"><svg class="icon"><use href="#i-code"/></svg></span><span>Codex<small>写代码</small></span></span></td><td><div class="bar"><i style="width:41%;--i:2"></i></div></td><td class="num r"><b data-to="412" data-fmt="k">412k</b> token</td></tr>
+                <tr><td><span class="ag"><span class="ib"><svg class="icon"><use href="#i-layout"/></svg></span><span>本地 Qwen3<small>检查</small></span></span></td><td><div class="bar"><i style="width:0"></i></div></td><td class="num r">不花钱</td></tr>
+              </tbody>
+              <tfoot><tr><td>合计</td><td></td><td class="num r"><b>$4.88</b> / $12</td></tr></tfoot>
+            </table>
+            <div class="alert rv" style="--i:10"><span class="dot" style="background:var(--doing)"></span>DeepSeek 本月预算已用 84%，用完后会自动跳过</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="band">
+    <div class="wrap">
+      <div class="control">
+        <div>
+          <span class="tag" style="--c:var(--ember)">你说了算</span>
+          <h2>AI 在跑<br>你随时能插手</h2>
+          <p class="sub">它能在你电脑上读写文件、运行命令，所以权限默认收紧，要你自己一档一档打开。</p>
+        </div>
+        <div class="verbs" id="verbs">
+          <div class="verb"><span class="w" data-w="插话。"></span><span class="d">运行中发消息，下一位发言的 AI 先回应你</span></div>
+          <div class="verb"><span class="w" data-w="改分工。"></span><span class="d">分好工先停下，你改内容、换人、调先后</span></div>
+          <div class="verb"><span class="w" data-w="停止。"></span><span class="d">一键停下，它开的命令也一起停掉</span></div>
+          <div class="verb"><span class="w" data-w="重做。"></span><span class="d">只重做失败的，或者单独重做某一步</span></div>
+          <div class="verb"><span class="w" data-w="@点名。"></span><span class="d">只让被点名的 AI 回答</span></div>
+        </div>
+      </div>
+      <div class="safe">
+        <div><svg class="icon"><use href="#i-lock"/></svg><span><b>默认只聊天</b>第一次启动时，Claude Code 和 Codex 不能读写文件、不能运行命令</span></div>
+        <div><svg class="icon"><use href="#i-shield"/></svg><span><b>沙箱兜底</b>最高一档也在系统沙箱里跑，读不到 Key、SSH、钥匙串和浏览器数据</span></div>
+        <div><svg class="icon"><use href="#i-phone"/></svg><span><b>只监听本机</b>默认只有本机能打开，手机访问要自己开，每台设备都要输访问码</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="faq">
+    <div class="wrap faq-wrap">
+      <div>
+        <span class="tag" style="--c:var(--sky)">常见问题</span>
+        <h2>用之前<br>想问的</h2>
+        <p class="sub">没找到答案，就去 GitHub 上提一个 Issue。</p>
+      </div>
+      <div class="faq">
+        <details><summary>和直接用一个 AI 有什么区别<svg class="icon"><use href="#i-chevron"/></svg></summary><p>不同的 AI 擅长的事不一样：有的能改文件、跑命令，有的便宜适合查资料，有的能看图。Agent Hub 让它们各干擅长的部分、互相检查，最后整合，不用你在几个窗口之间复制粘贴。</p></details>
+        <details><summary>要花钱吗<svg class="icon"><use href="#i-chevron"/></svg></summary><p>Agent Hub 本身免费开源。调用模型的费用照各家的算：Claude Code、Codex 用你账号自带的额度，API 按用量付费，本地模型不花钱。每个 AI 可以设每月预算。</p></details>
+        <details><summary>没有 API Key 能先试试吗<svg class="icon"><use href="#i-chevron"/></svg></summary><p>能。添加智能体时选「演示模式」，不调用任何模型，可以先熟悉三种协作方式和任务清单。</p></details>
+        <details><summary>聊天记录和 Key 存在哪<svg class="icon"><use href="#i-chevron"/></svg></summary><p>都在你电脑上 Agent Hub 文件夹里的 <code>data/</code>，不会上传到别的服务器，只有对话内容会发给你配置的模型接口。最高权限档的 AI 读不到这个文件夹。</p></details>
+        <details><summary>AI 会不会乱改我电脑上的文件<svg class="icon"><use href="#i-chevron"/></svg></summary><p>默认不会：第一次启动时只能聊天。打开「可改文件」后只能写它自己的工作目录；最高一档也只能写你指定的文件夹，并且在系统沙箱里跑。</p></details>
+        <details><summary>Windows、Linux 能用吗<svg class="icon"><use href="#i-chevron"/></svg></summary><p>主要在 macOS 上开发和测试。Windows、Linux 用 <code>npm start</code> 也能跑，但扫描版 PDF、HEIC 图片等少数文件功能只有 Mac 有，Claude Code、Codex 的最高权限档只在 macOS 上测过。</p></details>
+        <details><summary>能接我自己训练的模型吗<svg class="icon"><use href="#i-chevron"/></svg></summary><p>能。MLX、GGUF、Hugging Face 格式都可以先跑成本地服务再接进来，也可以直接接一个推理脚本。小模型上下文短，可以单独设置只发最新一条消息、合并系统提示词等。</p></details>
+        <details><summary>手机能用吗<svg class="icon"><use href="#i-chevron"/></svg></summary><p>能。在 <code>.env</code> 里写 <code>HOST=0.0.0.0</code> 打开局域网访问，手机和电脑连同一个 Wi-Fi，扫码打开、输访问码登录，还能添加到主屏幕。</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section id="start" class="final band">
+    <canvas class="sky" data-density="2400" aria-hidden="true"></canvas>
+    <div class="wrap">
+      <span class="tag" style="--c:var(--mint)">开始用</span>
+      <h2 class="lg">一条命令<br>把这群 AI 叫齐</h2>
+      <div class="term">
+        <div class="term-bar">
+          <span class="dots"><i></i><i></i><i></i></span>
+          <span class="mini-tabs" role="tablist" aria-label="系统"><button role="tab" aria-selected="true" data-os="cli">命令行</button><button role="tab" aria-selected="false" data-os="mac">macOS</button><button role="tab" aria-selected="false" data-os="win">Windows</button></span>
+        </div>
+        <div class="term-body">
+          <pre id="cmd"></pre>
+          <button class="copy" id="copyCmd" aria-label="复制命令"><svg class="icon idle"><use href="#i-copy"/></svg><svg class="icon ok"><use href="#i-check"/></svg></button>
+        </div>
+      </div>
+      <p class="req">需要 Node.js 20.3 以上，然后打开 http://localhost:8787</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/l531001482-max/Agent-hub"><svg class="icon"><use href="#i-github"/></svg>在 GitHub 上点个 Star</a>
+        <a class="link-arrow" href="https://github.com/l531001482-max/Agent-hub#readme">看完整说明<svg class="icon"><use href="#i-arrow-right"/></svg></a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="foot">
+      <div><div class="wm">Agent Hub</div><p>本地多智能体协作台。开源，全部在本机运行。</p></div>
+      <div><h4>开始</h4><ul>
+        <li><a href="https://github.com/l531001482-max/Agent-hub#快速开始">快速开始</a></li>
+        <li><a href="https://github.com/l531001482-max/Agent-hub#需要什么">需要什么</a></li>
+        <li><a href="https://github.com/l531001482-max/Agent-hub#在手机上用">在手机上用</a></li>
+      </ul></div>
+      <div><h4>文档</h4><ul>
+        <li><a href="https://github.com/l531001482-max/Agent-hub#添加智能体">添加智能体</a></li>
+        <li><a href="https://github.com/l531001482-max/Agent-hub#接入本地模型自己训练的模型专精模型">接入本地模型</a></li>
+        <li><a href="https://github.com/l531001482-max/Agent-hub#数据与安全">数据与安全</a></li>
+      </ul></div>
+      <div><h4>项目</h4><ul>
+        <li><a href="https://github.com/l531001482-max/Agent-hub">GitHub</a></li>
+        <li><a href="https://github.com/l531001482-max/Agent-hub/issues">提问题</a></li>
+        <li><a href="https://github.com/l531001482-max/Agent-hub/blob/main/LICENSE">MIT 许可</a></li>
+      </ul></div>
+    </div>
+    <div class="legal"><span>© 2026 Agent Hub contributors · MIT 许可</span><span>图标来自 Lucide</span></div>
+  </div>
+</footer>
+
+<script>
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const $ = (s, r = document) => r.querySelector(s), $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+
+// ---------- 首屏演示：三个标签页，只有当前这个、并且看得见时才跑 ----------
+const demo = $('#demo');
+let demoVisible = false, active = 'collab', gen = 0;
+// 只在看得见时计时；切换标签后旧的循环自动作废
+const wait = (ms, g) => new Promise((done, fail) => { let left = ms; const t = setInterval(() => { if (g !== gen) { clearInterval(t); fail('stale'); return; } if (demoVisible) left -= 100; if (left <= 0) { clearInterval(t); done(); } }, 100); });
+
+$$('.tabs [role=tab]', demo).forEach((b) => b.addEventListener('click', () => {
+  const id = b.id.slice(2); if (id === active) return;
+  $$('.tabs [role=tab]', demo).forEach((x) => x.setAttribute('aria-selected', x === b));
+  $$('.panel', demo).forEach((p) => { p.hidden = p.id !== 'p-' + id; });
+  active = id; start();
+}));
+function start() { gen++; const g = gen; const run = { collab: collab, chat: chat, bs: brainstorm }[active]; run(g).catch(() => {}); }
+
+// 分工协作：组织图
+const fit = $('#fit'), stage = $('#stage');
+function layout() {
+  if (matchMedia('(max-width: 720px)').matches) { stage.style.transform = ''; fit.style.width = ''; fit.style.height = ''; return; }
+  const w = ($('#p-collab').clientWidth || 1024) - 64, s = Math.min(1, w / 960);
+  stage.style.transform = `scale(${s})`; fit.style.width = 960 * s + 'px'; fit.style.height = 428 * s + 'px';
+}
+layout(); addEventListener('resize', layout);
+const N = $$('.node', stage), J = $$('.junction', stage);
+const nowEl = $('#now'), nowText = $('#nowText'), nowDot = $('#nowDot');
+const setN = (i, st) => { N[i].classList.remove('doing', 'done'); if (st) N[i].classList.add(st); };
+function say(text, color) {
+  nowEl.classList.add('fade');
+  setTimeout(() => { nowText.textContent = text; nowDot.style.background = color || ''; nowEl.classList.remove('fade'); }, 200);
+}
+function travel(id, ms = 700) {
+  if (!demoVisible || reduce) return;
+  const path = document.getElementById(id), dot = $(`.pulse[data-w="${id}"]`), len = path.getTotalLength(), t0 = performance.now();
+  (function step(t) {
+    const k = Math.min(1, (t - t0) / ms), e = 1 - Math.pow(1 - k, 3), pt = path.getPointAtLength(e * len);
+    dot.setAttribute('cx', pt.x); dot.setAttribute('cy', pt.y);
+    dot.style.opacity = k < .1 ? k * 10 : k > .85 ? (1 - k) / .15 : 1;
+    if (k < 1) requestAnimationFrame(step); else dot.style.opacity = 0;
+  })(t0);
+}
+async function collab(g) {
+  if (reduce) { N.forEach((_, i) => setN(i, 'done')); J.forEach((j) => j.classList.add('on')); say('完成：一份整合好的方案', 'var(--done)'); return; }
+  for (;;) {
+    N.forEach((_, i) => setN(i)); J.forEach((j) => j.classList.remove('on'));
+    say('收到任务：做一个记账小程序的第一版方案');
+    await wait(1200, g);
+    setN(0, 'doing'); say('负责人正在按擅长拆任务', 'var(--doing)');
+    await wait(1600, g);
+    setN(0, 'done'); J[0].classList.add('on'); travel('w0', 400);
+    await wait(400, g);
+    ['w1', 'w2', 'w3'].forEach((w) => travel(w));
+    await wait(700, g);
+    setN(1, 'doing'); setN(2, 'doing'); setN(3, 'doing'); say('三件事互不依赖，同时开工', 'var(--doing)');
+    await wait(1800, g);
+    setN(1, 'done'); travel('w4'); say('DeepSeek 交了资料和交接单', 'var(--doing)');
+    await wait(1100, g);
+    setN(3, 'done'); travel('w6'); say('Claude Code 交了界面草图', 'var(--doing)');
+    await wait(1100, g);
+    setN(2, 'done'); travel('w5'); say('Codex 写好了 技术方案.md', 'var(--doing)');
+    await wait(700, g);
+    J[1].classList.add('on'); setN(4, 'doing'); say('负责人拿到三份产出和交接单，正在整合', 'var(--doing)');
+    await wait(2000, g);
+    setN(4, 'done'); say('完成：一份整合好的方案', 'var(--done)');
+    await wait(3200, g);
+  }
+}
+
+// 自由讨论：群聊
+const CHAT = [
+  ['me', '我', '', '记账小程序第一版，先做哪些功能？'],
+  ['ai', 'DeepSeek', 'DS', '先做记一笔、分类、月度汇总。同类小程序的差评大多是记账步骤太多，这三样够日常用了。'],
+  ['ai', 'Codex', 'CX', '同意。数据先存手机本地，导出 Excel 放到第二版，能少一半工作量。'],
+  ['ai', 'Claude Code', 'CC', '补一条：记一笔要在三步以内完成，不然坚持不了一周。'],
+  ['me', '我', '', '<span class="mention">@Codex</span> 存本地的话，换手机会不会丢？'],
+  ['ai', 'Codex', 'CX', '会丢。第一版在设置里加一个「导出备份」按钮就够了，我来写。'],
+];
+const chatEl = $('#chat');
+function bubble([kind, who, ab, text], typing) {
+  const el = document.createElement('div'); el.className = 'cm' + (kind === 'me' ? ' me' : '');
+  el.innerHTML = kind === 'me'
+    ? `<div><div class="who"><b>${who}</b></div><div class="bubble">${text}</div></div>`
+    : `<span class="av">${ab}</span><div><div class="who"><b>${who}</b><span>${who === 'DeepSeek' ? '云端 API' : '本机账号'}</span></div><div class="bubble">${typing ? '<span class="typing"><i></i><i></i><i></i></span>' : text}</div></div>`;
+  return el;
+}
+async function chat(g) {
+  if (reduce) { chatEl.innerHTML = ''; CHAT.forEach((m) => { const b = bubble(m); b.classList.add('in'); chatEl.append(b); }); return; }
+  for (;;) {
+    chatEl.innerHTML = '';
+    for (const m of CHAT) {
+      const b = bubble(m, m[0] === 'ai'); chatEl.append(b); requestAnimationFrame(() => b.classList.add('in'));
+      if (m[0] === 'ai') { await wait(1100, g); $('.bubble', b).innerHTML = m[3]; await wait(900 + m[3].length * 18, g); }
+      else await wait(1200, g);
+    }
+    await wait(3500, g);
+  }
+}
+
+// 头脑风暴
+const ideas = $$('.idea'), steps = $$('#bsStep [data-s]'), bsSum = $('#bsSum');
+const stepOn = (n) => steps.forEach((s) => s.classList.toggle('on', +s.dataset.s === n));
+async function brainstorm(g) {
+  const reset = () => { ideas.forEach((i) => { i.classList.remove('shown', 'ranked', 'rank1'); $$('.vote', i).forEach((v) => v.classList.remove('in')); $('.dot', i).style.background = ''; }); bsSum.classList.remove('in'); stepOn(0); };
+  const finish = () => { ideas.forEach((i) => { i.classList.add('shown', 'ranked'); $$('.vote', i).forEach((v) => v.classList.add('in')); $('.dot', i).style.background = 'var(--done)'; }); ideas[1].classList.add('rank1'); bsSum.classList.add('in'); stepOn(3); };
+  if (reduce) { finish(); return; }
+  for (;;) {
+    reset(); stepOn(1);
+    ideas.forEach((i) => { $('.dot', i).style.background = 'var(--doing)'; });
+    await wait(2200, g);
+    for (const i of ideas) { i.classList.add('shown'); $('.dot', i).style.background = 'var(--done)'; await wait(250, g); }
+    await wait(1400, g);
+    stepOn(2);
+    for (const v of $$('.vote')) { v.classList.add('in'); await wait(380, g); }
+    await wait(900, g);
+    stepOn(3); ideas.forEach((i) => i.classList.add('ranked')); ideas[1].classList.add('rank1');
+    await wait(500, g); bsSum.classList.add('in');
+    await wait(4500, g);
+  }
+}
+if ('IntersectionObserver' in window) new IntersectionObserver((es) => { demoVisible = es[0].isIntersecting; }, { threshold: .2 }).observe(demo);
+else demoVisible = true;
+start();
+
+// ---------- 滚到眼前播放一次 ----------
+function typeIn() {
+  const el = $('#typing'), tx = $('.tx', el), full = el.dataset.text; let i = 0;
+  tx.textContent = '';
+  const t = setInterval(() => { tx.textContent = full.slice(0, ++i); if (i >= full.length) clearInterval(t); }, 90);
+}
+function countUp(el) {
+  const to = parseFloat(el.dataset.to), k0 = performance.now();
+  (function step(t) {
+    const k = Math.min(1, (t - k0) / 900), v = to * (1 - Math.pow(1 - k, 3));
+    el.textContent = el.dataset.fmt === 'k' ? Math.round(v) + 'k' : '$' + v.toFixed(2);
+    if (k < 1) requestAnimationFrame(step);
+  })(k0);
+}
+async function typeVerbs() {
+  for (const v of $$('#verbs .verb')) {
+    const w = $('.w', v), word = w.dataset.w; v.classList.add('typing-now');
+    for (let i = 1; i <= word.length; i++) { w.textContent = word.slice(0, i); await sleep(110); }
+    v.classList.remove('typing-now'); v.classList.add('done'); await sleep(260);
+  }
+}
+const once = (el, fn, th = .35) => {
+  if (reduce || !('IntersectionObserver' in window)) { fn(true); return; }
+  new IntersectionObserver((es, o) => { if (es[0].isIntersecting) { o.disconnect(); fn(false); } }, { threshold: th }).observe(el);
+};
+$$('.reveal').forEach((el) => once(el, (instant) => {
+  el.classList.add('in');
+  if (el.id === 'steps' && !instant) typeIn();
+  if (el.id === 'budget' && !instant) setTimeout(() => $$('[data-to]', el).forEach(countUp), 200);
+}));
+once($('#verbs'), (instant) => {
+  if (instant) $$('#verbs .verb').forEach((v) => { $('.w', v).textContent = $('.w', v).dataset.w; v.classList.add('done'); });
+  else typeVerbs();
+}, .5);
+
+// ---------- 交接单 / 资料和文件 ----------
+$$('.mock .mini-tabs [data-v]').forEach((b) => b.addEventListener('click', () => {
+  const box = b.closest('.mock');
+  $$('[data-v]', box).forEach((x) => x.setAttribute('aria-selected', x === b));
+  $$('[data-pane]', box).forEach((p) => { p.hidden = p.dataset.pane !== b.dataset.v; });
+}));
+
+// ---------- 安装命令：按系统切换 + 复制 ----------
+const REPO = 'https://github.com/l531001482-max/Agent-hub.git';
+const CMDS = {
+  cli: { show: `<span class="p">$ </span>git clone ${REPO}\n<span class="p">$ </span>cd Agent-hub\n<span class="p">$ </span>npm install\n<span class="p">$ </span>npm start`, copy: `git clone ${REPO} && cd Agent-hub && npm install && npm start` },
+  mac: { show: `<span class="p">$ </span>git clone ${REPO}\n<span class="p">$ </span>open Agent-hub/start.command\n<span class="c"># 以后在访达里双击 start.command 就能启动</span>`, copy: `git clone ${REPO} && open Agent-hub/start.command` },
+  win: { show: `<span class="p">&gt; </span>git clone ${REPO}\n<span class="p">&gt; </span>cd Agent-hub\n<span class="p">&gt; </span>npm install\n<span class="p">&gt; </span>npm start`, copy: `git clone ${REPO}; cd Agent-hub; npm install; npm start` },
+};
+let os = /Win/.test(navigator.platform) ? 'win' : 'cli';
+function showCmd() { $('#cmd').innerHTML = CMDS[os].show; $$('[data-os]').forEach((b) => b.setAttribute('aria-selected', b.dataset.os === os)); }
+$$('[data-os]').forEach((b) => b.addEventListener('click', () => { os = b.dataset.os; showCmd(); }));
+showCmd();
+$('#copyCmd').addEventListener('click', async (e) => {
+  const b = e.currentTarget; try { await navigator.clipboard.writeText(CMDS[os].copy); } catch { return; }
+  b.classList.add('copied'); setTimeout(() => b.classList.remove('copied'), 1500);
+});
+
+// ---------- 星空（首屏和结尾各一块，只在看得见时动） ----------
+$$('canvas.sky').forEach((cv) => {
+  const ctx = cv.getContext('2d'), density = +cv.dataset.density || 1800;
+  const tints = ['255,255,255', '255,255,255', '255,255,255', '210,225,255', '190,210,255', '255,236,210', '255,222,190'];
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  let W, H, stars = [], shoot = null, last = 0, nextShoot = 3000, vis = false;
+  function build() {
+    const dpr = Math.min(2, devicePixelRatio || 1), r = cv.getBoundingClientRect();
+    W = r.width; H = r.height; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    stars = Array.from({ length: Math.round(W * H / density) }, () => {
+      let x = Math.random() * W, y = Math.random() * H;
+      if (Math.random() < .3) { const t = Math.random(); x = t * W; y = H * (.1 + .5 * t) + rnd(-1, 1) * rnd(0, H * .1); }
+      const big = Math.random() < .04;
+      return { x, y, r: big ? rnd(1, 1.6) : rnd(.3, .9), a: big ? rnd(.7, 1) : rnd(.15, .6), tw: rnd(.4, 1.6), ph: rnd(0, 6.3), c: tints[(Math.random() * tints.length) | 0] };
+    });
+  }
+  function draw(t) {
+    ctx.clearRect(0, 0, W, H);
+    for (const s of stars) {
+      const a = reduce ? s.a : s.a * (.65 + .35 * Math.sin(t / 1000 * s.tw + s.ph));
+      ctx.fillStyle = `rgba(${s.c},${a.toFixed(3)})`; ctx.beginPath(); ctx.arc(s.x, s.y, s.r, 0, 6.3); ctx.fill();
+      if (s.r > 1.1) { ctx.fillStyle = `rgba(${s.c},${(a * .12).toFixed(3)})`; ctx.beginPath(); ctx.arc(s.x, s.y, s.r * 3, 0, 6.3); ctx.fill(); }
+    }
+    if (shoot) {
+      const k = (t - shoot.t0) / 900;
+      if (k >= 1) shoot = null;
+      else {
+        const x = shoot.x + shoot.dx * k, y = shoot.y + shoot.dy * k, al = Math.sin(k * Math.PI) * .8;
+        const g = ctx.createLinearGradient(x, y, x - shoot.dx * .25, y - shoot.dy * .25);
+        g.addColorStop(0, `rgba(255,255,255,${al})`); g.addColorStop(1, 'rgba(255,255,255,0)');
+        ctx.strokeStyle = g; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(x - shoot.dx * .25, y - shoot.dy * .25); ctx.stroke();
+      }
+    }
+  }
+  function frame(t) {
+    if (vis && !document.hidden && t - last > 33) {
+      if (!shoot && t > nextShoot) { shoot = { x: rnd(W * .2, W * .9), y: rnd(0, H * .35), dx: -rnd(220, 360), dy: rnd(90, 160), t0: t }; nextShoot = t + rnd(7000, 14000); }
+      draw(t); last = t;
+    }
+    requestAnimationFrame(frame);
+  }
+  build(); draw(0);
+  addEventListener('resize', () => { build(); draw(performance.now()); });
+  if (!reduce) {
+    if ('IntersectionObserver' in window) new IntersectionObserver((es) => { vis = es[0].isIntersecting; }).observe(cv); else vis = true;
+    requestAnimationFrame(frame);
+  }
+});
+</script>
+</body>
+</html>
