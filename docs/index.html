@@ -323,7 +323,7 @@ table.budget tfoot td { font-weight: 500; }
 
 /* 页脚 */
 footer { padding: 72px 0 40px; border-top: 1px solid var(--line); }
-.foot { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 32px; }
+.foot { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 32px; }
 .foot .wm { font: 600 36px/1 var(--display); letter-spacing: -0.03em; }
 .foot .wm + p { margin: 12px 0 0; font-size: 14px; color: var(--muted); max-width: 18rem; }
 .foot h4 { margin: 0 0 14px; font-size: 13px; font-weight: 600; }
@@ -345,7 +345,7 @@ footer { padding: 72px 0 40px; border-top: 1px solid var(--line); }
   .cell:nth-child(2n) { border-right: 0; }
   .cell:nth-last-child(-n+3) { border-bottom: 1px solid var(--line); }
   .cell:nth-last-child(-n+2) { border-bottom: 0; }
-  .foot { grid-template-columns: 1fr 1fr 1fr; }
+  .foot { grid-template-columns: repeat(4, 1fr); }
   .foot > :first-child { grid-column: 1 / -1; }
   .top nav a.hide-sm { display: none; }
   section { padding: 96px 0; }
@@ -744,6 +744,9 @@ footer { padding: 72px 0 40px; border-top: 1px solid var(--line); }
         <li><a href="https://github.com/l531001482-max/Agent-hub">GitHub</a></li>
         <li><a href="https://github.com/l531001482-max/Agent-hub/issues">提问题</a></li>
         <li><a href="https://github.com/l531001482-max/Agent-hub/blob/main/LICENSE">MIT 许可</a></li>
+      </ul></div>
+      <div><h4>推荐</h4><ul>
+        <li><a href="https://github.com/LibreSpark/LibreTV" target="_blank" rel="noopener" title="LibreSpark/LibreTV：开源影视站，支持 Docker 等方式自己部署">LibreTV</a></li>
       </ul></div>
     </div>
     <div class="legal"><span>© 2026 Agent Hub contributors · MIT 许可</span><span>图标来自 Lucide</span></div>
