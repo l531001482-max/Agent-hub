@@ -3,18 +3,41 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agent Hub · 本地多智能体协作台</title>
-<meta name="description" content="让 Claude Code、Codex、DeepSeek 和本地模型在一个群聊里讨论、头脑风暴、分工协作。开源，全部在本机运行。">
+<title>Agent Hub：开源本地多智能体协作台，让多个 AI 分工协作</title>
+<meta name="description" content="开源的本地多智能体协作台：把 Claude Code、Codex、DeepSeek 和本地模型拉进一个群，负责人拆任务、大家分头做，最后整合成一份结果。带交接单和用量预算，全部在本机运行。">
 <meta name="theme-color" content="#09090a">
 <link rel="canonical" href="https://agentsworkspace.dev/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Agent Hub">
+<meta property="og:locale" content="zh_CN">
 <meta property="og:url" content="https://agentsworkspace.dev/">
 <meta property="og:title" content="Agent Hub · 本地多智能体协作台">
 <meta property="og:description" content="给一群 AI 派活：负责人拆任务，能同时做的同时做，最后整合。开源，全部在本机运行。">
 <meta property="og:image" content="https://agentsworkspace.dev/screenshot-dark.png">
+<meta property="og:image:width" content="1600">
+<meta property="og:image:height" content="1000">
+<meta property="og:image:alt" content="Agent Hub 界面：分工协作房间，上方是任务清单流程图，下方是负责人的总结">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Agent Hub：开源本地多智能体协作台">
+<meta name="twitter:description" content="给一群 AI 派活：负责人拆任务，能同时做的同时做，最后整合。开源，全部在本机运行。">
+<meta name="twitter:image" content="https://agentsworkspace.dev/screenshot-dark.png">
+<script type="application/ld+json">
+{"@context":"https://schema.org","@graph":[
+ {"@type":"WebSite","@id":"https://agentsworkspace.dev/#website","url":"https://agentsworkspace.dev/","name":"Agent Hub","inLanguage":"zh-CN"},
+ {"@type":"SoftwareApplication","@id":"https://agentsworkspace.dev/#app","name":"Agent Hub","url":"https://agentsworkspace.dev/",
+  "description":"开源的本地多智能体协作台：把 Claude Code、Codex、DeepSeek 和本地模型拉进一个群，负责人拆任务、大家分头做，最后整合成一份结果。带交接单和用量预算，全部在本机运行。",
+  "applicationCategory":"DeveloperApplication","operatingSystem":"macOS, Linux, Windows",
+  "offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},
+  "license":"https://opensource.org/licenses/MIT",
+  "image":"https://agentsworkspace.dev/screenshot-dark.png",
+  "sameAs":["https://github.com/l531001482-max/Agent-hub"]}
+]}
+</script>
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%2309090a'/%3E%3Cpath d='M16 9v6M9 15h14M9 15v5M16 15v5M23 15v5' stroke='%23737373' stroke-width='2' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='8' r='3' fill='%23f5f5f5'/%3E%3Ccircle cx='9' cy='23' r='3' fill='%23f5f5f5'/%3E%3Ccircle cx='16' cy='23' r='3' fill='%2322c55e'/%3E%3Ccircle cx='23' cy='23' r='3' fill='%23f5f5f5'/%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@500;600&family=JetBrains+Mono:wght@400;500&display=swap"></noscript>
 <style>
 /*
   参考 paperclip.ing 的配色分配：底色和文字全是中性黑灰；颜色只出现在三处——
@@ -326,7 +349,7 @@ footer { padding: 72px 0 40px; border-top: 1px solid var(--line); }
 .foot { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr; gap: 32px; }
 .foot .wm { font: 600 36px/1 var(--display); letter-spacing: -0.03em; }
 .foot .wm + p { margin: 12px 0 0; font-size: 14px; color: var(--muted); max-width: 18rem; }
-.foot h4 { margin: 0 0 14px; font-size: 13px; font-weight: 600; }
+.foot h3 { margin: 0 0 14px; font-family: inherit; font-size: 13px; font-weight: 600; letter-spacing: 0; }
 .foot ul { margin: 0; padding: 0; list-style: none; }
 .foot li { padding: 4px 0; }
 .foot li a { font-size: 13px; color: var(--muted); transition: color .15s var(--ease); }
@@ -730,22 +753,22 @@ footer { padding: 72px 0 40px; border-top: 1px solid var(--line); }
   <div class="wrap">
     <div class="foot">
       <div><div class="wm">Agent Hub</div><p>本地多智能体协作台。开源，全部在本机运行。</p></div>
-      <div><h4>开始</h4><ul>
+      <div><h3>开始</h3><ul>
         <li><a href="https://github.com/l531001482-max/Agent-hub#快速开始">快速开始</a></li>
         <li><a href="https://github.com/l531001482-max/Agent-hub#需要什么">需要什么</a></li>
         <li><a href="https://github.com/l531001482-max/Agent-hub#在手机上用">在手机上用</a></li>
       </ul></div>
-      <div><h4>文档</h4><ul>
+      <div><h3>文档</h3><ul>
         <li><a href="https://github.com/l531001482-max/Agent-hub#添加智能体">添加智能体</a></li>
         <li><a href="https://github.com/l531001482-max/Agent-hub#接入本地模型自己训练的模型专精模型">接入本地模型</a></li>
         <li><a href="https://github.com/l531001482-max/Agent-hub#数据与安全">数据与安全</a></li>
       </ul></div>
-      <div><h4>项目</h4><ul>
+      <div><h3>项目</h3><ul>
         <li><a href="https://github.com/l531001482-max/Agent-hub">GitHub</a></li>
         <li><a href="https://github.com/l531001482-max/Agent-hub/issues">提问题</a></li>
         <li><a href="https://github.com/l531001482-max/Agent-hub/blob/main/LICENSE">MIT 许可</a></li>
       </ul></div>
-      <div><h4>推荐</h4><ul>
+      <div><h3>推荐</h3><ul>
         <li><a href="https://tv.agentsworkspace.dev" target="_blank" rel="noopener" title="LibreTV 影视站（基于开源项目 LibreSpark/LibreTV，需要访问密码）">LibreTV</a></li>
       </ul></div>
     </div>
